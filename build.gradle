@@ -1,11 +1,13 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.2.51'
     id "com.jfrog.bintray" version "1.7.3"
-
 }
 
-group 'medusa'
+group 'com.budinverse.utils'
 version '0.0.1'
+
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 repositories {
     mavenCentral()
