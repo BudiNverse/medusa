@@ -11,7 +11,7 @@ repositories {
 }
 dependencies {
   compile group: 'mysql', name: 'mysql-connector-java', version: '6.0.6' //depends on the driver you need
-  compile 'com.budinverse.utils:Medusa:<latest version>'
+  compile 'com.budinverse.utils:medusa:<latest version>'
 }
 ```
 ### Config
