@@ -1,4 +1,7 @@
 # medusa - simpler jdbc
+ [ ![Download](https://api.bintray.com/packages/budinverse/utils/medusa/images/download.svg) ](https://bintray.com/budinverse/utils/medusa/_latestVersion)
+ [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+ 
 medusa is a jdbc-utilities library that is designed to reduce writing code pertaining to jdbc. No more closing of connection manually, no spawning your own `preparedStatements`. This helps reduce bugs where connection is not clsoed and bugs where column number are wrong.All this in a lightweight library that leverages Kotlin's ability to write DSLs.medusa is not an ORM, it is just a utilities library to help you.
 
 ### Gradle
