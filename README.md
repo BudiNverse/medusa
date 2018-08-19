@@ -63,8 +63,8 @@ fun getUser() = transaction {
 ```
 Querying list of objects
 ```kotlin
-fun getUser() = transaction {
-        val users = query<User> {
+fun getUsers() = transaction {
+        val users = queryList<User> {
             //language=MySQL
             statement = "SELECT * FROM User"
             type = ::User // make sure constructor is available!
