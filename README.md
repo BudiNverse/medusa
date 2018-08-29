@@ -2,8 +2,42 @@
  [ ![Download](https://api.bintray.com/packages/budinverse/utils/medusa/images/download.svg) ](https://bintray.com/budinverse/utils/medusa/_latestVersion)
  [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
  
-medusa is a jdbc-utilities library that is designed to reduce writing code pertaining to jdbc. No more closing of connection manually, no spawning your own `preparedStatements`. This helps reduce bugs where connection is not clsoed and bugs where column number are wrong.All this in a lightweight library that leverages Kotlin's ability to write DSLs.medusa is not an ORM, it is just a utilities library to help you. Library size is only 20kb
+medusa is a jdbc-utilities library that is designed to reduce writing code pertaining to jdbc.
+No more closing of connection manually, no spawning your own `preparedStatements`. 
+This helps reduce bugs where connection is not closed and bugs where column number 
+are wrong.All this in a lightweight library that leverages Kotlin's ability to write DSLs.
+Medusa is not an ORM, it is just a utilities library to help you.
 
+### Features
+- Minimal use of reflection magic
+- DSL which results in easier usage
+- Asynchronous Transactions support (using Kotlin's coroutine)
+
+### Changelog
+#### [0.0.1 Experimental - Possible breaking API changes] 
+- [x] Transaction Support
+- [x] Async Transaction
+- [x] DSL for setting of config
+- [x] Standard database operations (query, queryList, insert, exec)
+- [x] TransactionResult type
+ 
+### Planned changes/updates
+- [ ] QueryTypes (0.0.2)
+- [ ] Reduce API differentiation for operation that returns a key and no key. (0.0.2)
+- [ ] Extend config to have support for databases that cannot generate keys (0.0.2)
+- [ ] Change `databasePassword` from `String` to `CharArray` for added security (0.0.2)
+- [ ] Various logging support via dbConfig (0.0.2)
+- [ ] Database `Connection` pooling (0.0.3)
+- [ ] Compile time generattion of kotlin models based on database schema (0.0.3)
+- [ ] Compile time generation of frequently used SQL statements. Eg. `INSERT INTO USER (email, username, passwordhash) VALUES (?,?,?)`(0.0.3)
+
+### Misc TODOs
+- [ ] Logo (why not, I can also design no kappa)
+- [ ] Website (again, why not lmao)
+- [ ] An actual fullstack example using Jetbrain's Ktor
+
+
+## Usage
 ### Gradle
 ```groovy
 repositories {
@@ -37,8 +71,8 @@ fun main(args: Array<String>) {
 Assume that all examples has the following `User` class
 ```kotlin
 data class User(val id: Int = 0,
-                     val name: String,
-                     val age: Int) {
+                val name: String,
+                val age: Int) {
         constructor(resultSet: ResultSet) : this(
                 resultSet["id"],
                 resultSet["name"],
@@ -118,7 +152,7 @@ fun runUpdate() {
 ```
 
 ### Transaction
-Includes usage of `execKeys` which returns `ResultSet?`
+Includes usage of `execKeys` which returns `ResultSet?`. To use async transaction, simply replace `transaction` with `transactionAsync` which returns `Deferred<TranasactionResult>`
 ```kotlin
 fun aTransasction(user: User): TransactionResult {
     var id = 0
