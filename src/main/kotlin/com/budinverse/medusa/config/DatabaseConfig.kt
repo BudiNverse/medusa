@@ -20,17 +20,21 @@ fun dbConfig(block: DatabaseConfig.() -> Unit) {
     DatabaseConfig.databaseConfig = config
 }
 
+
 /**
  * @constructor Creates a DatabaseConfig object
  * @property databaseUser User for your database
  * @property databasePassword Password for your database
  * @property databaseUrl URL to access your database
+ * @property driver Database driver
+ * @property generatedKeySupport Whether database supports generatedKey
  * @author BudiNverse [ budisyahiddin@pm.me ]
  */
 class DatabaseConfig(var databaseUser: String? = null,
-                     var databasePassword: String? = null,
+                     var databasePassword: CharArray? = null,
                      var databaseUrl: String? = null,
-                     var driver: String? = null) {
+                     var driver: String? = null,
+                     var generatedKeySupport: Boolean = true) {
     companion object {
         /**
          * Uninitialised DatabaseConfig
@@ -51,9 +55,10 @@ class DatabaseConfig(var databaseUser: String? = null,
 
             // creates a the configuration from a file
             databaseConfig = DatabaseConfig(databaseUser = properties.getProperty("databaseUser"),
-                    databasePassword = properties.getProperty("databasePassword"),
+                    databasePassword = properties.getProperty("databasePassword").toCharArray(),
                     databaseUrl = properties.getProperty("databaseUrl"),
-                    driver = properties.getProperty("driver"))
+                    driver = properties.getProperty("driver"),
+                    generatedKeySupport = properties.getProperty("generatedKeySupport").toBoolean())
         }
 
         /**
