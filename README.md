@@ -22,10 +22,10 @@ Medusa is not an ORM, it is just a utilities library to help you.
 - [x] TransactionResult type
  
 ### Planned changes/updates
-- [ ] QueryTypes (0.0.2)
-- [ ] Reduce API differentiation for operation that returns a key and no key. (0.0.2)
-- [ ] Extend config to have support for databases that cannot generate keys (0.0.2)
-- [ ] Change `databasePassword` from `String` to `CharArray` for added security (0.0.2)
+- [x] QueryTypes (0.0.2)
+- [x] Reduce API differentiation for operation that returns a key and no key. (0.0.2)
+- [x] Extend config to have support for databases that cannot generate keys (0.0.2)
+- [x] Change `databasePassword` from `String` to `CharArray` for added security (0.0.2)
 - [ ] Various logging support via dbConfig (0.0.2)
 - [ ] Database `Connection` pooling (0.0.3)
 - [ ] Compile time generattion of kotlin models based on database schema (0.0.3)
