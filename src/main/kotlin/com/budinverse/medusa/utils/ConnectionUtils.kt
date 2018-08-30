@@ -12,5 +12,7 @@ fun getDatabaseConnection(): Connection {
     val jdbcDriver = databaseConfig.driver
     val dbUrl = databaseConfig.databaseUrl
     Class.forName(jdbcDriver)
-    return DriverManager.getConnection(dbUrl, databaseConfig.databaseUser, databaseConfig.databasePassword.toString())
+    return DriverManager.getConnection(dbUrl,
+            databaseConfig.databaseUser,
+            databaseConfig.databasePassword.toString())
 }
