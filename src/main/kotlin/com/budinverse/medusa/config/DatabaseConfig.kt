@@ -12,7 +12,6 @@ import java.util.*
  * - databaseUrl
  * - driver
  * @param block Users can set parameters for DatabaseConfig in this block
- * @author BudiNverse [ budisyahiddin@pm.me ]
  */
 fun dbConfig(block: DatabaseConfig.() -> Unit) {
     val config = DatabaseConfig()
@@ -28,7 +27,6 @@ fun dbConfig(block: DatabaseConfig.() -> Unit) {
  * @property databaseUrl URL to access your database
  * @property driver Database driver
  * @property generatedKeySupport Whether database supports generatedKey
- * @author BudiNverse [ budisyahiddin@pm.me ]
  */
 class DatabaseConfig(var databaseUser: String? = null,
                      var databasePassword: CharArray? = null,

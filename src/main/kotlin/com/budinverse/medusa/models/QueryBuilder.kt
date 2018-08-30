@@ -1,4 +1,4 @@
-package com.budinverse.medusa.core
+package com.budinverse.medusa.models
 
 import java.sql.ResultSet
 

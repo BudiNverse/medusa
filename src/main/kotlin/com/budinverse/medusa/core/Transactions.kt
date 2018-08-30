@@ -1,8 +1,10 @@
 package com.budinverse.medusa.core
 
+import com.budinverse.medusa.config.DatabaseConfig.Companion.databaseConfig
+import com.budinverse.medusa.models.*
+import com.budinverse.medusa.models.TransactionResult.Err
+import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.*
-import com.budinverse.medusa.utils.TransactionResult.Fail
-import com.budinverse.medusa.utils.TransactionResult.Success
 import kotlinx.coroutines.experimental.async
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -10,20 +12,18 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 typealias ExecRKeys = ExecResult<Int, ResultSet>
-typealias ExecRKeyless = ExecResult<Int, Nothing>
 
 /**
  * Starts a transaction
  * Automatically opens databaseConnection and closes it when all operations are done
  * @param block Takes in functions that are available in TransactionBuilder ie.
  * - exec
- * - execKeys
  * - insert
- * - insertKeys
+ * - update
+ * - delete
  * - query
  * - queryList
  * @return [TransactionResult]
- * @author BudiNverse [ budisyahiddin@pm.me ]
  */
 fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
     TransactionBuilder(block = block).run {
@@ -31,11 +31,11 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
             block()
             this.finalize()
 
-            Success()
+            Ok()
         } catch (e: Exception) {
             e.printStackTrace()
             connection.rollback()
-            Fail(e)
+            Err(e)
         }
     }
 }
@@ -45,9 +45,9 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
  * @see transaction
  * @param block Takes in functions that are available in TransactionBuilder ie.
  * - exec
- * - execKeys
  * - insert
- * - insertKeys
+ * - update
+ * - delete
  * - query
  * - queryList
  * @return Deferred [TransactionResult]
@@ -72,24 +72,16 @@ class TransactionBuilder constructor(
     /**
      * DSL version of [exec]
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [Any]
-     * @author BudiNverse [ budisyahiddin@pm.me ]
+     * @return [ExecRKeys]
      */
-    fun exec(block: ExecBuilder.() -> Unit): ExecRKeyless {
+    fun exec(block: ExecBuilder.() -> Unit): ExecRKeys {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
-        return if (execBuilder.hasPreparedStatement) {
-            exec(execBuilder.statement, execBuilder.values)
-        } else {
-            exec(execBuilder.statement)
+        return when (execBuilder.hasPreparedStatement) {
+            true -> exec(execBuilder.statement, execBuilder.values)
+            else -> exec(execBuilder.statement)
         }
-    }
-
-    fun execKeys(block: ExecBuilder.() -> Unit): ExecRKeys {
-        val execBuilder = ExecBuilder()
-        block(execBuilder)
-        return execKeys(execBuilder.statement, execBuilder.values)
     }
 
     fun insert(block: ExecBuilder.() -> Unit): ExecRKeys {
@@ -99,88 +91,102 @@ class TransactionBuilder constructor(
         return insert(execBuilder.statement, execBuilder.values)
     }
 
-    fun insertKeys(block: ExecBuilder.() -> Unit): ExecRKeys {
+    fun update(block: ExecBuilder.() -> Unit): ExecRKeys {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
-        return insertKeys(execBuilder.statement, execBuilder.values)
+        return insert(execBuilder.statement, execBuilder.values)
     }
 
-    fun <T> query(block: QueryBuilder<T>.() -> Unit): QueryResult<ResultSet, T> {
+    fun delete(block: ExecBuilder.() -> Unit): ExecRKeys {
+        val execBuilder = ExecBuilder()
+        block(execBuilder)
+
+        return insert(execBuilder.statement, execBuilder.values)
+    }
+
+    fun <T> query(block: QueryBuilder<T>.() -> Unit): QueryResult {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
         return queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
-                ?: QueryResult.Empty()
+                ?: QueryResult.Err(QueryResult.NoDataReturned("No data was returned!"))
     }
 
-    fun <T> queryList(block: QueryBuilder<T>.() -> Unit): QueryResult<ResultSet, List<T>> {
+    fun <T> queryList(block: QueryBuilder<T>.() -> Unit): QueryResult {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
         return queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
-                ?: QueryResult.DataOnly(listOf())
+                ?: QueryResult.Err(QueryResult.MissingType("Type is missing!"))
     }
 
     /**
      * Executes raw SQL String without using any preparedStatements
      * @param statement
      */
-    fun exec(statement: String): ExecRKeyless {
+    fun exec(statement: String): ExecRKeys {
         val rowsMutated = connection.prepareStatement(statement).executeUpdate()
         return ExecResult.RowsMutated(rowsMutated)
     }
 
-    fun exec(statement: String, psValues: Array<Any?> = arrayOf()): ExecRKeyless {
-        val ps: PreparedStatement = connection.prepareStatement(statement)
-        pss += ps
-        require(ps.parameterMetaData.parameterCount == psValues.size)
-        for (i in 1..psValues.size) {
-            ps[i] = psValues[i - 1]
-        }
-        val rowsMutated = ps.executeUpdate()
-        return ExecResult.RowsMutated(rowsMutated)
-    }
+    fun exec(statement: String, psValues: Array<Any?> = arrayOf()): ExecRKeys {
+        val ps: PreparedStatement = if (databaseConfig.generatedKeySupport)
+            connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
+        else
+            connection.prepareStatement(statement)
 
-    fun execKeys(statement: String, psValues: Array<Any?> = arrayOf()): ExecRKeys {
-        val ps: PreparedStatement = connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
         pss += ps
-        require(ps.parameterMetaData.parameterCount == psValues.size)
+
+        // check for parameter size and values provided
+        require(ps.parameterMetaData.parameterCount == psValues.size) {
+            "Number of values does not match number of parameters in preparedStatement!"
+        }
+
+        // set data to preparedStatement from psValues
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
         val rowsMutated = ps.executeUpdate()
         val rs: ResultSet = ps.generatedKeys
 
-
-
-        return if (rs.next()) ExecResult.WithKeys(rowsMutated, rs)
-        else ExecResult.RowsMutated(rowsMutated)
+        return when {
+            databaseConfig.generatedKeySupport && rs.next() -> ExecResult.AllExec(rowsMutated, rs)
+            else -> ExecResult.RowsMutated(rowsMutated)
+        }
     }
 
-    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), block: (ResultSet) -> T):
-            QueryResult<ResultSet, T> {
+    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T):
+            QueryResult {
         val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
-        require(ps.parameterMetaData.parameterCount == psValues.size)
+
+        require(ps.parameterMetaData.parameterCount == psValues.size) {
+            "Number of values does not match number of parameters in preparedStatement!"
+        }
+
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
         val resultSet: ResultSet = ps.executeQuery()
 
         return if (resultSet.next()) {
-            QueryResult.All(resultSet, block(resultSet))
+            QueryResult.Ok(resultSet, transform(resultSet))
         } else {
-            QueryResult.ResultSetOnly(resultSet)
+            QueryResult.Err(QueryResult.NoDataReturned("No data was returned!"))
         }
     }
 
     fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), block: (ResultSet) -> T):
-            QueryResult<ResultSet, List<T>> {
+            QueryResult {
         val list = mutableListOf<T>()
         val ps = connection.prepareStatement(statement)
         pss += ps
-        require(ps.parameterMetaData.parameterCount == psValues.size)
+
+        require(ps.parameterMetaData.parameterCount == psValues.size) {
+            "Number of values does not match number of parameters in preparedStatement!"
+        }
+
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
@@ -189,11 +195,12 @@ class TransactionBuilder constructor(
         while (resultSet.next())
             list.add(block(resultSet))
 
-        return QueryResult.All(resultSet, list)
+        return QueryResult.Ok(resultSet, list)
     }
 
     fun insert(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
-    fun insertKeys(statement: String, psValues: Array<Any?> = arrayOf()) = execKeys(statement, psValues)
+    fun update(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
+    fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
 
     fun finalize() {
         connection.commit()
