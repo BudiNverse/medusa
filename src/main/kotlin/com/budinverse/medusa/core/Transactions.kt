@@ -11,7 +11,6 @@ import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.Statement
 
-typealias ExecRKeys = ExecResult<Int, ResultSet>
 
 /**
  * Starts a transaction
@@ -51,7 +50,6 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
  * - query
  * - queryList
  * @return Deferred [TransactionResult]
- * @author BudiNverse [ budisyahiddin@pm.me ]
  */
 fun transactionAsync(block: TransactionBuilder.() -> Unit) = async {
     transaction {
@@ -74,7 +72,7 @@ class TransactionBuilder constructor(
      * @param block Block that sets [ExecBuilder] and uses it for operations
      * @return [ExecRKeys]
      */
-    fun exec(block: ExecBuilder.() -> Unit): ExecRKeys {
+    fun exec(block: ExecBuilder.() -> Unit): ExecResult {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
@@ -84,35 +82,63 @@ class TransactionBuilder constructor(
         }
     }
 
-    fun insert(block: ExecBuilder.() -> Unit): ExecRKeys {
+    /**
+     * DSL version of [exec]
+     * Same implementation as [exec]. Created to improve readability
+     * @param block Block that sets [ExecBuilder] and uses it for operations
+     * @return [ExecResult]
+     */
+    fun insert(block: ExecBuilder.() -> Unit): ExecResult {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
         return insert(execBuilder.statement, execBuilder.values)
     }
 
-    fun update(block: ExecBuilder.() -> Unit): ExecRKeys {
+    /**
+     * DSL version of [exec]
+     * Same implementation as [exec]. Created to improve readability
+     * @param block Block that sets [ExecBuilder] and uses it for operations
+     * @return [ExecResult]
+     */
+    fun update(block: ExecBuilder.() -> Unit): ExecResult {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
         return insert(execBuilder.statement, execBuilder.values)
     }
 
-    fun delete(block: ExecBuilder.() -> Unit): ExecRKeys {
+    /**
+     * DSL version of [exec]
+     * Same implementation as [exec]. Created to improve readability
+     * @param block Block that sets [ExecBuilder] and uses it for operations
+     * @return [ExecResult]
+     */
+    fun delete(block: ExecBuilder.() -> Unit): ExecResult {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
         return insert(execBuilder.statement, execBuilder.values)
     }
 
+    /**
+     * DSL version of [query]
+     * @param block Block that sets [QueryBuilder] and uses it for operations
+     * @return [QueryResult]
+     */
     fun <T> query(block: QueryBuilder<T>.() -> Unit): QueryResult {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
         return queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
-                ?: QueryResult.Err(QueryResult.NoDataReturned("No data was returned!"))
+                ?: QueryResult.Err(QueryResult.NoDataReturned("No resultSet was returned!"))
     }
 
+    /**
+     * DSL version of [queryList]
+     * @param block Block that sets [QueryBuilder] and uses it for operations
+     * @return [QueryResult]
+     */
     fun <T> queryList(block: QueryBuilder<T>.() -> Unit): QueryResult {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
@@ -125,12 +151,12 @@ class TransactionBuilder constructor(
      * Executes raw SQL String without using any preparedStatements
      * @param statement
      */
-    fun exec(statement: String): ExecRKeys {
+    fun exec(statement: String): ExecResult {
         val rowsMutated = connection.prepareStatement(statement).executeUpdate()
-        return ExecResult.RowsMutated(rowsMutated)
+        return ExecResult(rowsMutated)
     }
 
-    fun exec(statement: String, psValues: Array<Any?> = arrayOf()): ExecRKeys {
+    fun exec(statement: String, psValues: Array<Any?> = arrayOf()): ExecResult {
         val ps: PreparedStatement = if (databaseConfig.generatedKeySupport)
             connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
         else
@@ -143,7 +169,7 @@ class TransactionBuilder constructor(
             "Number of values does not match number of parameters in preparedStatement!"
         }
 
-        // set data to preparedStatement from psValues
+        // set resultSet to preparedStatement from psValues
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
@@ -151,8 +177,8 @@ class TransactionBuilder constructor(
         val rs: ResultSet = ps.generatedKeys
 
         return when {
-            databaseConfig.generatedKeySupport && rs.next() -> ExecResult.AllExec(rowsMutated, rs)
-            else -> ExecResult.RowsMutated(rowsMutated)
+            databaseConfig.generatedKeySupport && rs.next() -> ExecResult(rowsMutated, rs)
+            else -> ExecResult(rowsMutated)
         }
     }
 
@@ -173,7 +199,7 @@ class TransactionBuilder constructor(
         return if (resultSet.next()) {
             QueryResult.Ok(resultSet, transform(resultSet))
         } else {
-            QueryResult.Err(QueryResult.NoDataReturned("No data was returned!"))
+            QueryResult.Err(QueryResult.NoDataReturned("No resultSet was returned!"))
         }
     }
 
@@ -203,6 +229,7 @@ class TransactionBuilder constructor(
     fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
 
     fun finalize() {
+        println(pss)
         connection.commit()
         pss.map(PreparedStatement::close)
         connection.close()

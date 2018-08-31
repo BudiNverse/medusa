@@ -1,6 +1,11 @@
 package com.budinverse.medusa.models
 
-sealed class ExecResult<out R, out V> {
-    class RowsMutated<out R>(val rowsMutated: R) : ExecResult<R, Nothing>()
-    class AllExec<out R, out V>(val rowsMutated: R, val value: V) : ExecResult<R, V>()
-}
+import java.sql.ResultSet
+
+//sealed class ExecResult {
+//    resultSet class RowsMutated(val rowsMutated: Int) : ExecResult()
+//    resultSet class AllExec(val rowsMutated: Int, val value: ResultSet) : ExecResult()
+//}
+
+class ExecResult(val rowsMutated: Int, val resultSet: ResultSet? = null)
+
