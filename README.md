@@ -22,7 +22,6 @@ Medusa is not an ORM, it is just a utilities library to help you.
 - [x] TransactionResult type
  
 ### Planned changes/updates
-- [x] QueryTypes (0.0.2)
 - [x] Reduce API differentiation for operation that returns a key and no key. (0.0.2)
 - [x] Extend config to have support for databases that cannot generate keys (0.0.2)
 - [x] Change `databasePassword` from `String` to `CharArray` for added security (0.0.2)

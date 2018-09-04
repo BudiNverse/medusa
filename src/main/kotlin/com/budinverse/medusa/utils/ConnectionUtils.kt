@@ -9,10 +9,8 @@ import java.sql.DriverManager
  * @return Connection
  */
 fun getDatabaseConnection(): Connection {
-    val jdbcDriver = databaseConfig.driver
-    val dbUrl = databaseConfig.databaseUrl
-    Class.forName(jdbcDriver)
-    return DriverManager.getConnection(dbUrl,
+    Class.forName(databaseConfig.driver)
+    return DriverManager.getConnection(databaseConfig.databaseUrl,
             databaseConfig.databaseUser,
             databaseConfig.databasePassword.toString())
 }

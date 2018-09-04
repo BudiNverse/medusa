@@ -1,7 +1,10 @@
 package com.budinverse.medusa.core
 
 import com.budinverse.medusa.config.DatabaseConfig.Companion.databaseConfig
-import com.budinverse.medusa.models.*
+import com.budinverse.medusa.models.ExecBuilder
+import com.budinverse.medusa.models.ExecResult
+import com.budinverse.medusa.models.QueryBuilder
+import com.budinverse.medusa.models.TransactionResult
 import com.budinverse.medusa.models.TransactionResult.Err
 import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.*
@@ -126,12 +129,12 @@ class TransactionBuilder constructor(
      * @param block Block that sets [QueryBuilder] and uses it for operations
      * @return [QueryResult]
      */
-    fun <T> query(block: QueryBuilder<T>.() -> Unit): QueryResult {
+    fun <T> query(block: QueryBuilder<T>.() -> Unit): T? {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
         return queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
-                ?: QueryResult.Err(QueryResult.NoDataReturned("No resultSet was returned!"))
+                ?: throw IllegalArgumentException("Type with `resultSet` constructor not provided!")
     }
 
     /**
@@ -139,12 +142,12 @@ class TransactionBuilder constructor(
      * @param block Block that sets [QueryBuilder] and uses it for operations
      * @return [QueryResult]
      */
-    fun <T> queryList(block: QueryBuilder<T>.() -> Unit): QueryResult {
+    fun <T> queryList(block: QueryBuilder<T>.() -> Unit): List<T> {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
         return queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
-                ?: QueryResult.Err(QueryResult.MissingType("Type is missing!"))
+                ?: throw IllegalArgumentException("Type with `resultSet` constructor not provided!")
     }
 
     /**
@@ -182,8 +185,7 @@ class TransactionBuilder constructor(
         }
     }
 
-    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T):
-            QueryResult {
+    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T): T? {
         val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
 
@@ -196,15 +198,13 @@ class TransactionBuilder constructor(
         }
         val resultSet: ResultSet = ps.executeQuery()
 
-        return if (resultSet.next()) {
-            QueryResult.Ok(resultSet, transform(resultSet))
-        } else {
-            QueryResult.Err(QueryResult.NoDataReturned("No resultSet was returned!"))
+        return when (resultSet.next()) {
+            true -> transform(resultSet)
+            else -> null
         }
     }
 
-    fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), block: (ResultSet) -> T):
-            QueryResult {
+    fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), block: (ResultSet) -> T): List<T> {
         val list = mutableListOf<T>()
         val ps = connection.prepareStatement(statement)
         pss += ps
@@ -221,7 +221,7 @@ class TransactionBuilder constructor(
         while (resultSet.next())
             list.add(block(resultSet))
 
-        return QueryResult.Ok(resultSet, list)
+        return list
     }
 
     fun insert(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
@@ -229,7 +229,7 @@ class TransactionBuilder constructor(
     fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
 
     fun finalize() {
-        println(pss)
+        pss.forEach { println("SQL: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
         connection.commit()
         pss.map(PreparedStatement::close)
         connection.close()

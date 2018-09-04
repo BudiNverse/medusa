@@ -91,7 +91,34 @@ class TransactionTest {
 
     @Test
     fun queryListTest() {
+        lateinit var qr: List<Person>
+        transaction {
+            qr = queryList {
+                statement = DummyData.queryList
+                type = ::Person
+            }
 
+            queryList<Person> {
+                statement = DummyData.queryList
+                type = ::Person
+            }
+        }
+
+        println(qr)
+    }
+
+    @Test
+    fun queryPerson() {
+        var person: Person? = null
+        transaction {
+            person = query {
+                statement = DummyData.query
+                values = arrayOf("zeon000")
+                type = ::Person
+            }
+        }
+
+        println(person)
     }
 
 
