@@ -29,7 +29,7 @@ fun dbConfig(block: DatabaseConfig.() -> Unit) {
  * @property generatedKeySupport Whether database supports generatedKey
  */
 class DatabaseConfig(var databaseUser: String? = null,
-                     var databasePassword: CharArray? = null,
+                     var databasePassword: String? = null,
                      var databaseUrl: String? = null,
                      var driver: String? = null,
                      var generatedKeySupport: Boolean = true) {
@@ -53,7 +53,7 @@ class DatabaseConfig(var databaseUser: String? = null,
 
             // creates a the configuration from a file
             databaseConfig = DatabaseConfig(databaseUser = properties.getProperty("databaseUser"),
-                    databasePassword = properties.getProperty("databasePassword").toCharArray(),
+                    databasePassword = properties.getProperty("databasePassword"),
                     databaseUrl = properties.getProperty("databaseUrl"),
                     driver = properties.getProperty("driver"),
                     generatedKeySupport = properties.getProperty("generatedKeySupport").toBoolean())

@@ -31,7 +31,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
     TransactionBuilder(block = block).run {
         return try {
             block()
-            this.finalize()
+            finalize()
 
             Ok()
         } catch (e: Exception) {
@@ -73,7 +73,7 @@ class TransactionBuilder constructor(
     /**
      * DSL version of [exec]
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecRKeys]
+     * @return [ExecResult]
      */
     fun exec(block: ExecBuilder.() -> Unit): ExecResult {
         val execBuilder = ExecBuilder()
