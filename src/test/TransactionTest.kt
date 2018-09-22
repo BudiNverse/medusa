@@ -1,6 +1,8 @@
 import com.budinverse.medusa.config.dbConfig
 import com.budinverse.medusa.core.transaction
 import com.budinverse.medusa.models.ExecResult
+import com.budinverse.medusa.models.TransactionResult.Err
+import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.get
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -120,5 +122,23 @@ class TransactionTest {
         println(person)
     }
 
+    private fun insertUser(person: Person) = transaction {
+        exec {
+            //language=MySQL
+            statement = "UPDATE medusa_test.person SET name = ? WHERE id = ?"
+            values = arrayOf(person.name, 1)
+        }
+    }
+
+    @Test
+    fun runUpdate() {
+        val user = Person(name = "zeon000", age = 19)
+        val res = insertUser(user)
+
+        when (res) {
+            is Ok -> /* Do smth on success */
+            is Err -> /* Do smth on Err */
+        }
+    }
 
 }

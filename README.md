@@ -129,36 +129,37 @@ fun runInsert() {
 ### Update/Delete
 For deletion just change the statement
 ```kotlin
-fun insertUpdate(user: User): TransactionResult = transaction {
+fun updateUser(user: user) = transaction {
         exec {
             //language=MySQL
-            statement = "UPDATE User SET name = ? WHERE id = ?"
+            statement = "UPDATE medusa_test.user SET name = ? WHERE id = ?"
             values = arrayOf(user.name, 1)
         }
     }
     
 fun runUpdate() {
-    val user = User("zeon000", 19)
-    val res = insertUser(user)
-    
-    when(res){
-        is Success -> println("Updated $user!")
-        is Fail -> println("Update $user! failed!")
+        val user = User(name = "zeon000", age = 19)
+        val res = updateUser(user)
+
+        when (res) {
+            is Ok -> /* Do smth on success */
+            is Err -> /* Do smth on Err */
+        }
     }
-}    
 ```
 
 ### Transaction
-Includes usage of `execKeys` which returns `ResultSet?`. To use async transaction, simply replace `transaction` with `transactionAsync` which returns `Deferred<TranasactionResult>`
+Includes usage of `execKeys` which returns `ResultSet?`. To use async transaction, simply replace `transaction` with 
+`transactionAsync` which returns `Deferred<TranasactionResult>`
 ```kotlin
 fun aTransasction(user: User): TransactionResult {
-    var id = 0
+    var id: Int
     transaction {
-                id = insertKeys {
+                id = insert {
                     //language=MySQL
                     statement = "INSERT INTO User (name, age) VALUES (?,?)"
                     values = arrayOf(user.name, user.age)
-                }!![1]
+                }.resultSet!![1] ?: -1
     
                 exec {
                     //language=MySQL
@@ -177,6 +178,38 @@ fun runTransaction() {
         is Fail -> println("Transaction failed!")
     }
 }    
+```
+### Transaction Async
+```kotlin
+suspend fun queryPersonAsync() {
+    var person: Person? = null
+    var person2: Person? = null
+
+    val txn1 = transactionAsync {
+        person = query<Person> {
+            statement = DummyData.query
+            values = arrayOf("zeon111")
+            type = ::Person
+        }
+    }
+
+    val txn2 = transactionAsync {
+        person2 = query<Person> {
+            statement = DummyData.query
+            values = arrayOf("zeon111")
+            type = ::Person
+        }
+    }
+
+    // you have to await both transactions
+    // before using person and person2
+    // else there will be a data race
+    // and it will print null
+    // which is what was initialized with
+    println("${txn1.await()} || ${txn2.await()}")
+    println(person)
+    println(person2)
+}
 ```
 
 
