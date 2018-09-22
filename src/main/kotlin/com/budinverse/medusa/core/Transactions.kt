@@ -31,13 +31,13 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
     TransactionBuilder(block = block).run {
         return try {
             block()
-            finalize()
-
             Ok()
         } catch (e: Exception) {
             e.printStackTrace()
             connection.rollback()
             Err(e)
+        } finally {
+            finalize()
         }
     }
 }
@@ -134,7 +134,6 @@ class TransactionBuilder constructor(
         block(queryBuilder)
 
         return queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
-                ?: throw IllegalArgumentException("Type with `resultSet` constructor not provided!")
     }
 
     /**
@@ -229,9 +228,10 @@ class TransactionBuilder constructor(
     fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
 
     fun finalize() {
-        pss.forEach { println("SQL: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
+        pss.forEach { println("medusa: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
         connection.commit()
         pss.map(PreparedStatement::close)
         connection.close()
+        println("medusa: Closing connection: ${this.connection}")
     }
 }

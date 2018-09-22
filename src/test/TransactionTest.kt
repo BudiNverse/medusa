@@ -18,7 +18,7 @@ data class Person(val id: Int = 0,
 }
 
 object DummyData {
-    // sql statements
+
     const val insert = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
     const val query = "SELECT * FROM medusa_test.Person WHERE name = ?"
     const val queryList = "SELECT * FROM medusa_test.Person"
@@ -112,7 +112,7 @@ class TransactionTest {
         transaction {
             person = query {
                 statement = DummyData.query
-                values = arrayOf("zeon000")
+                values = arrayOf("zeon111")
                 type = ::Person
             }
         }
