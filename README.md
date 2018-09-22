@@ -119,9 +119,9 @@ fun runInsert() {
     val user = User("zeon000", 19)
     val res = insertUser(user)
     
-    when(res){
-        is Success -> println("Inserted $user!")
-        is Fail -> println("Insert $user! failed!")
+    when (res) {
+        is Ok -> /* Do smth on success */
+        is Err -> /* Do smth on Err */
     }
 }    
 ```
@@ -173,9 +173,9 @@ fun runTransaction() {
     val user = User("zeon000", 19)
     val res = insertUser(user)
     
-    when(res){
-        is Success -> println("Transaction success!")
-        is Fail -> println("Transaction failed!")
+    when (res) {
+        is Ok -> /* Do smth on success */
+        is Err -> /* Do smth on Err */
     }
 }    
 ```
