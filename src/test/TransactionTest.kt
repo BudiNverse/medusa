@@ -36,11 +36,10 @@ object DummyData {
 class TransactionTest {
     init {
         dbConfig {
-            databaseUser = "postgres"
-            databasePassword = "12345".toCharArray()
-            databaseUrl = "jdbc:postgresql://localhost:5432/postgres"
-            driver = "org.postgresql.Driver"
-            generatedKeySupport = true
+            databaseUser = "root"
+            databasePassword = "12345"
+            databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
+            driver = "com.mysql.cj.jdbc.Driver"
         }
     }
 
