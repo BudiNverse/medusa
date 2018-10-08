@@ -1,10 +1,10 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.2.51'
+    id 'org.jetbrains.kotlin.jvm' version '1.2.70'
     id "com.jfrog.bintray" version "1.7.3"
 }
 
 group 'com.budinverse.utils'
-version '0.0.1'
+version '0.0.2-BETA'
 
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
@@ -37,7 +37,8 @@ bintray {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.22.5"
-    testCompile group: 'mysql', name: 'mysql-connector-java', version: '6.0.6'
+    testCompile group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
+    testCompile group: 'mysql', name: 'mysql-connector-java', version: '8.0.11'
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
@@ -45,6 +46,8 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
 }
+
+sourceSets.test.java.srcDirs = ["src/test"]
 
 artifacts {
     archives sourcesJar

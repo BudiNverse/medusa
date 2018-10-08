@@ -1,4 +1,4 @@
-package com.budinverse.medusa.core
+package com.budinverse.medusa.models
 
 open class ExecBuilder(var statement: String = "",
                        var values: Array<Any?> = arrayOf(),
