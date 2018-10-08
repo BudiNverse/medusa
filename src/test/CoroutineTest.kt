@@ -1,4 +1,5 @@
 import com.budinverse.medusa.config.dbConfig
+import com.budinverse.medusa.core.transaction
 import com.budinverse.medusa.core.transactionAsync
 import com.budinverse.medusa.models.ExecResult
 import com.budinverse.medusa.utils.get
@@ -14,6 +15,18 @@ fun main(args: Array<String>) = runBlocking {
     queryPersonAsync()
     //insertAsync()
 }
+
+//fun queryList(): List<Person> {
+//    //lateinit var personList: List<Person>
+//    transaction {
+//        var personList = queryList<Person> {
+//            statement = "SELECT * FROM medusa_test.Person"
+//            type = ::Person
+//        }
+//    }
+//    //return personList
+//}
+
 
 suspend fun queryPersonAsync() {
     var person: Person? = null

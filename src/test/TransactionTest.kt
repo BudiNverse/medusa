@@ -130,15 +130,15 @@ class TransactionTest {
         }
     }
 
-    @Test
-    fun runUpdate() {
-        val user = Person(name = "zeon000", age = 19)
-        val res = insertUser(user)
-
-        when (res) {
-            is Ok -> /* Do smth on success */
-            is Err -> /* Do smth on Err */
-        }
-    }
+//    @Test
+//    fun runUpdate() {
+//        val user = Person(name = "zeon000", age = 19)
+//        val res = insertUser(user)
+//
+//        when (res) {
+//            is Ok -> /* Do smth on success */
+//            is Err -> /* Do smth on Err */
+//        }
+//    }
 
 }
