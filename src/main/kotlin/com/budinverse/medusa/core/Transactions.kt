@@ -31,7 +31,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
     TransactionBuilder(block = block).run {
         return try {
             block()
-            Ok()
+            Ok(this.results)
         } catch (e: Exception) {
             e.printStackTrace()
             connection.rollback()
@@ -64,7 +64,7 @@ class TransactionBuilder constructor(
         val connection: Connection = getDatabaseConnection(),
         val block: TransactionBuilder.() -> Unit) {
 
-    private val results: MutableList<Any?> = arrayListOf()
+    internal val results: MutableList<Any?> = arrayListOf()
 
     private val pss: MutableList<PreparedStatement> = mutableListOf()
 
