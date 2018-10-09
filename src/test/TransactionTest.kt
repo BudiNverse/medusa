@@ -123,7 +123,7 @@ class TransactionTest {
 
     @Test
     fun queryPerson() {
-        var person: Person? = null
+        lateinit var person: Person
         val transaction = transaction {
             query<Person> {
                 statement = DummyData.query
@@ -134,10 +134,10 @@ class TransactionTest {
 
         when (transaction) {
             is Ok -> person = transaction.res[0] as Person
-            is Err -> throw IllegalStateException()
+            is Err -> throw IllegalStateException(":(")
         }
 
-        println(person)
+        println(person) //Person(id=2, name=zeon111, age=20)
     }
 
     private fun insertUser(person: Person) = transaction {
