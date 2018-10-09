@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.budinverse.utils'
-version '0.0.2-BETA'
+version '0.0.2-BETA-05102018'
 
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
