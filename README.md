@@ -13,7 +13,7 @@ Medusa is not an ORM, it is just a utilities library to help you.
 ### Features
 - Minimal use of reflection magic
 - DSL which results in easier usage
-- Asynchronous Transactions support (using Kotlin's coroutine)
+- Asynchronous Transactions support (using Kotlin's coroutines)
 
 ### Changelog
 #### [0.0.1 Experimental - Possible breaking API changes] 
@@ -86,15 +86,22 @@ data class User(val id: Int = 0,
 A single query
 ```kotlin
 fun getUser() = transaction {
-        val user = query<User> {
+        query<User> {
             //language=MySQL
             statement = "SELECT * FROM User WHERE name = ?"
             values = arrayOf("zeon222")
             type = ::User
         }
-
-     user?.let(::println) // User(id=18, name=Zeon222, age=20)
 }
+
+fun main(args: Array<String>) {
+    val tx = getUser()
+    when(tx) {
+        is Ok -> println(tx.res[0] as User) // User(id=18, name=Zeon222, age=20)
+        is Err -> println(tx.e)
+    }
+}
+
 ```
 Querying list of objects
 ```kotlin
@@ -104,9 +111,16 @@ fun getUsers() = transaction {
             statement = "SELECT * FROM User"
             type = ::User // make sure constructor is available!
         }
-
-     users.let(::println) // [User(id=18, name=Zeon222, age=20), User(id=20, name=Zeon333, age=19)]
 }
+
+fun main(args: Array<String>) {
+    val tx = getUsers()
+    when(tx) {
+        is Ok -> println(tx.res[0] as List<User>) // [User(id=18, name=Zeon222, age=20), User(id=20, name=Zeon333, age=19)]
+        is Err -> println(tx.e)
+    }
+}
+
 ```
 
 ### Insert
@@ -152,54 +166,23 @@ fun runUpdate() {
     }
 ```
 
-### Transaction
-Includes usage of `execKeys` which returns `ResultSet?`. To use async transaction, simply replace `transaction` with 
-`transactionAsync` which returns `Deferred<TranasactionResult>`
-```kotlin
-fun aTransasction(user: User): TransactionResult {
-    var id: Int
-    transaction {
-                id = insert {
-                    //language=MySQL
-                    statement = "INSERT INTO User (name, age) VALUES (?,?)"
-                    values = arrayOf(user.name, user.age)
-                }.resultSet!![1] ?: -1
-    
-                exec {
-                    //language=MySQL
-                    statement = "UPDATE User SET age = ? WHERE id = ?"
-                    values = arrayOf(20, id)
-                }
-        }
-}
-    
-fun runTransaction() {
-    val user = User("zeon000", 19)
-    val res = insertUser(user)
-    
-    when (res) {
-        is Ok -> /* Do smth on success */
-        is Err -> /* Do smth on Err */
-    }
-}    
-```
 ### Transaction Async
 ```kotlin
-suspend fun queryPersonAsync() {
-    var person: Person? = null
-    var person2: Person? = null
+suspend fun queryUserAsync() {
+    var user: User? = null
+    var user2: User? = null
 
     val txn1 = transactionAsync {
-        person = query<Person> {
-            statement = DummyData.query
+        query<User> {
+            statement = "SELECT * FROM medusa_test.Person WHERE name = ?"
             values = arrayOf("zeon111")
             type = ::Person
         }
     }
 
     val txn2 = transactionAsync {
-        person2 = query<Person> {
-            statement = DummyData.query
+        query<User> {
+            statement = "SELECT * FROM medusa_test.Person WHERE name = ?"
             values = arrayOf("zeon111")
             type = ::Person
         }
@@ -210,10 +193,46 @@ suspend fun queryPersonAsync() {
     // else there will be a data race
     // and it will print null
     // which is what was initialized with
-    println("${txn1.await()} || ${txn2.await()}")
-    println(person)
-    println(person2)
+    
+    val awaitedTxn1 = txn1.await()
+    val awaitedTxn2 = txn2.await()
+
+    user = when (awaitedTxn1) {
+        is Ok -> awaitedTxn1.res[0] as User
+        is Err -> null
+    }
+
+    user2 = when (awaitedTxn2) {
+        is Ok -> awaitedTxn2.res[0] as User
+        is Err -> null
+    }
+
+    println("${System.currentTimeMillis()} : $user")
+    println("${System.currentTimeMillis()} : $user2")
 }
+
+fun main(args: Array<String>) = runBlocking {
+    launch {
+        queryUserAsync()
+    }
+    queryUserAsync()
+}
+```
+
+This will print
+```
+[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
+[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
+[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
+[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
+[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@1242cd18 
+[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@21386018 
+[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@4f66d092 
+[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@6117a77f 
+1539087990865 : User(id=2, name=zeon111, age=20)
+1539087990865 : User(id=2, name=zeon111, age=20)
+1539087990865 : User(id=2, name=zeon111, age=20)
+1539087990865 : User(id=2, name=zeon111, age=20)
 ```
 
 

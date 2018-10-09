@@ -5,7 +5,6 @@ import com.budinverse.medusa.models.ExecResult
 import com.budinverse.medusa.models.TransactionResult.Err
 import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.get
-import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
 
@@ -21,8 +20,19 @@ fun main(args: Array<String>) = runBlocking {
     }
 
     queryPersonAsync()
-    //queryList()
-    //insertAsync()
+
+//    [medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.Person WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1
+//    [medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.Person WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1
+//    [medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.Person WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1
+//    [medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.Person WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1
+//    [medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@1242cd18
+//    [medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@21386018
+//    [medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@4f66d092
+//    [medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@6117a77f
+//    1539087990865 : Person(id=2, name=zeon111, age=20)
+//    1539087990865 : Person(id=2, name=zeon111, age=20)
+//    1539087990865 : Person(id=2, name=zeon111, age=20)
+//    1539087990865 : Person(id=2, name=zeon111, age=20)
 }
 
 fun queryList() {
@@ -84,8 +94,6 @@ suspend fun queryPersonAsync() {
 
     println("${System.currentTimeMillis()} : $person")
     println("${System.currentTimeMillis()} : $person2")
-
-    delay(2000)
 }
 
 suspend fun insertAsync() {
