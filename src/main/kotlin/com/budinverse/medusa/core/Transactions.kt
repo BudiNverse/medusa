@@ -31,7 +31,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
     TransactionBuilder(block = block).run {
         return try {
             block()
-            Ok()
+            Ok(this.results)
         } catch (e: Exception) {
             e.printStackTrace()
             connection.rollback()
@@ -63,6 +63,8 @@ fun transactionAsync(block: TransactionBuilder.() -> Unit) = async {
 class TransactionBuilder constructor(
         val connection: Connection = getDatabaseConnection(),
         val block: TransactionBuilder.() -> Unit) {
+
+    internal val results: MutableList<Any?> = arrayListOf()
 
     private val pss: MutableList<PreparedStatement> = mutableListOf()
 
@@ -129,11 +131,11 @@ class TransactionBuilder constructor(
      * @param block Block that sets [QueryBuilder] and uses it for operations
      * @return [QueryResult]
      */
-    fun <T> query(block: QueryBuilder<T>.() -> Unit): T? {
+    fun <T> query(block: QueryBuilder<T>.() -> Unit) {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
-        return queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
+        queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
     }
 
     /**
@@ -141,11 +143,11 @@ class TransactionBuilder constructor(
      * @param block Block that sets [QueryBuilder] and uses it for operations
      * @return [QueryResult]
      */
-    fun <T> queryList(block: QueryBuilder<T>.() -> Unit): List<T> {
+    fun <T> queryList(block: QueryBuilder<T>.() -> Unit) {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
-        return queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
+        queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
                 ?: throw IllegalArgumentException("Type with `resultSet` constructor not provided!")
     }
 
@@ -184,7 +186,7 @@ class TransactionBuilder constructor(
         }
     }
 
-    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T): T? {
+    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
         val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
 
@@ -197,13 +199,13 @@ class TransactionBuilder constructor(
         }
         val resultSet: ResultSet = ps.executeQuery()
 
-        return when (resultSet.next()) {
-            true -> transform(resultSet)
-            else -> null
+        when {
+            resultSet.next() -> results.add(transform(resultSet))
         }
+
     }
 
-    fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), block: (ResultSet) -> T): List<T> {
+    fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
         val list = mutableListOf<T>()
         val ps = connection.prepareStatement(statement)
         pss += ps
@@ -218,9 +220,9 @@ class TransactionBuilder constructor(
 
         val resultSet: ResultSet = ps.executeQuery()
         while (resultSet.next())
-            list.add(block(resultSet))
+            list.add(transform(resultSet))
 
-        return list
+        results.add(list)
     }
 
     fun insert(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
@@ -228,10 +230,10 @@ class TransactionBuilder constructor(
     fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
 
     fun finalize() {
-        pss.forEach { println("medusa: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
+        pss.forEach { println("\u001B[36m[medusa]: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount} \u001B[0m") }
         connection.commit()
         pss.map(PreparedStatement::close)
         connection.close()
-        println("medusa: Closing connection: ${this.connection}")
+        println("\u001B[33m[medusa]: Closing connection: ${this.connection} \u001B[0m")
     }
 }

@@ -21,6 +21,7 @@ data class Person(val id: Int = 0,
 
 object DummyData {
 
+
     const val insert = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
     const val query = "SELECT * FROM medusa_test.Person WHERE name = ?"
     const val queryList = "SELECT * FROM medusa_test.Person"
@@ -93,33 +94,50 @@ class TransactionTest {
     @Test
     fun queryListTest() {
         lateinit var qr: List<Person>
-        transaction {
-            qr = queryList {
-                statement = DummyData.queryList
-                type = ::Person
-            }
+        lateinit var person: Person
 
+        val transaction = transaction {
             queryList<Person> {
                 statement = DummyData.queryList
                 type = ::Person
             }
-        }
 
-        println(qr)
-    }
-
-    @Test
-    fun queryPerson() {
-        var person: Person? = null
-        transaction {
-            person = query {
+            query<Person> {
                 statement = DummyData.query
                 values = arrayOf("zeon111")
                 type = ::Person
             }
         }
 
+        when (transaction) {
+            is Ok -> {
+                qr = transaction.res[0] as List<Person>
+                person = transaction.res[1] as Person
+            }
+            is Err -> throw IllegalStateException()
+        }
+
+        println(qr)
         println(person)
+    }
+
+    @Test
+    fun queryPerson() {
+        lateinit var person: Person
+        val transaction = transaction {
+            query<Person> {
+                statement = DummyData.query
+                values = arrayOf("zeon111")
+                type = ::Person
+            }
+        }
+
+        when (transaction) {
+            is Ok -> person = transaction.res[0] as Person
+            is Err -> throw IllegalStateException(":(")
+        }
+
+        println(person) //Person(id=2, name=zeon111, age=20)
     }
 
     private fun insertUser(person: Person) = transaction {
