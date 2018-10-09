@@ -1,59 +1,92 @@
+import com.budinverse.medusa.config.dbConfig
+import com.budinverse.medusa.core.transaction
 import com.budinverse.medusa.core.transactionAsync
 import com.budinverse.medusa.models.ExecResult
+import com.budinverse.medusa.models.TransactionResult.Err
+import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.get
+import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.runBlocking
 
-//fun main(args: Array<String>) = runBlocking {
-//    dbConfig {
-//        databaseUser = "root"
-//        databasePassword = "12345"
-//        databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
-//        driver = "com.mysql.cj.jdbc.Driver"
-//    }
-//    queryPersonAsync()
-//    //insertAsync()
-//}
+fun main(args: Array<String>) = runBlocking {
+    dbConfig {
+        databaseUser = "root"
+        databasePassword = "12345"
+        databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
+        driver = "com.mysql.cj.jdbc.Driver"
+    }
+    launch {
+        queryPersonAsync()
+    }
 
-//fun queryList(): List<Person> {
-//    //lateinit var personList: List<Person>
-//    transaction {
-//        var personList = queryList<Person> {
-//            statement = "SELECT * FROM medusa_test.Person"
-//            type = ::Person
-//        }
-//    }
-//    //return personList
-//}
+    queryPersonAsync()
+    //queryList()
+    //insertAsync()
+}
+
+fun queryList() {
+    lateinit var personList: List<Person>
+    val txn = transaction {
+        queryList<Person> {
+            statement = "SELECT * FROM medusa_test.Person"
+            type = ::Person
+        }
+    }
+
+    when (txn) {
+        is Ok -> personList = txn.res[0] as List<Person>
+        is Err -> throw IllegalStateException()
+    }
 
 
-//suspend fun queryPersonAsync() {
-//    var person: Person? = null
-//    var person2: Person? = null
-//
-//    val txn1 = transactionAsync {
-//        person = query<Person> {
-//            statement = DummyData.query
-//            values = arrayOf("zeon111")
-//            type = ::Person
-//        }
-//    }
-//
-//    val txn2 = transactionAsync {
-//        person2 = query<Person> {
-//            statement = DummyData.query
-//            values = arrayOf("zeon111")
-//            type = ::Person
-//        }
-//    }
-//
-//    // you have to await both transactions
-//    // before using person and person2
-//    // else there will be a data race
-//    // and it will print null
-//    // which is what was initialized with
-//    println("${txn1.await()} || ${txn2.await()}")
-//    println(person)
-//    println(person2)
-//}
+    println("${System.currentTimeMillis()} : $personList")
+}
+
+
+suspend fun queryPersonAsync() {
+    var person: Person? = null
+    var person2: Person? = null
+
+    val txn1 = transactionAsync {
+        query<Person> {
+            statement = DummyData.query
+            values = arrayOf("zeon111")
+            type = ::Person
+        }
+    }
+
+    val txn2 = transactionAsync {
+        query<Person> {
+            statement = DummyData.query
+            values = arrayOf("zeon111")
+            type = ::Person
+        }
+    }
+
+    // you have to await both transactions
+    // before using person and person2
+    // else there will be a data race
+    // and it will print null
+    // which is what was initialized with
+    val awaitedTxn1 = txn1.await()
+    val awaitedTxn2 = txn2.await()
+
+    person = when (awaitedTxn1) {
+        is Ok -> awaitedTxn1.res[0] as Person
+        is Err -> null
+    }
+
+    person2 = when (awaitedTxn2) {
+        is Ok -> awaitedTxn2.res[0] as Person
+        is Err -> null
+    }
+
+    println("${System.currentTimeMillis()} : $person")
+    println("${System.currentTimeMillis()} : $person2")
+
+    delay(2000)
+}
 
 suspend fun insertAsync() {
     var exr: Int = -1

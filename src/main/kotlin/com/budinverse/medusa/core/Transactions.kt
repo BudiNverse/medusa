@@ -230,10 +230,10 @@ class TransactionBuilder constructor(
     fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
 
     fun finalize() {
-        pss.forEach { println("medusa: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
+        pss.forEach { println("\u001B[36m[medusa]: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount} \u001B[0m") }
         connection.commit()
         pss.map(PreparedStatement::close)
         connection.close()
-        println("medusa: Closing connection: ${this.connection}")
+        println("\u001B[33m[medusa]: Closing connection: ${this.connection} \u001B[0m")
     }
 }
