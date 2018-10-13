@@ -50,7 +50,7 @@ class TransactionTest {
     fun insertTest() {
         var ins: ExecResult? = null
         transaction {
-            ins = insert {
+            insert {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[0].name, DummyData.persons[0].age)
             }
@@ -76,12 +76,12 @@ class TransactionTest {
         var upt: ExecResult? = null
 
         transaction {
-            ins = insert {
+            insert {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[2].name, DummyData.persons[2].age)
             }
 
-            upt = update {
+            update {
                 statement = DummyData.update
                 values = arrayOf(DummyData.persons[3].name, DummyData.persons[3].age, DummyData.persons[2].name)
             }
@@ -95,8 +95,14 @@ class TransactionTest {
     fun queryListTest() {
         lateinit var qr: List<Person>
         lateinit var person: Person
+        lateinit var execResult: ExecResult
 
         val transaction = transaction {
+            insert {
+                statement = DummyData.insert
+                values = arrayOf("jeff", 19)
+            }
+
             queryList<Person> {
                 statement = DummyData.queryList
                 type = ::Person
@@ -111,12 +117,15 @@ class TransactionTest {
 
         when (transaction) {
             is Ok -> {
-                qr = transaction.res[0] as List<Person>
-                person = transaction.res[1] as Person
+                execResult = transaction.res[0] as ExecResult
+                qr = transaction.res[1] as List<Person>
+                person = transaction.res[2] as Person
+
             }
             is Err -> throw IllegalStateException()
         }
 
+        println(execResult)
         println(qr)
         println(person)
     }
@@ -147,16 +156,4 @@ class TransactionTest {
             values = arrayOf(person.name, 1)
         }
     }
-
-//    @Test
-//    fun runUpdate() {
-//        val user = Person(name = "zeon000", age = 19)
-//        val res = insertUser(user)
-//
-//        when (res) {
-//            is Ok -> /* Do smth on success */
-//            is Err -> /* Do smth on Err */
-//        }
-//    }
-
 }

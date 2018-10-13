@@ -4,7 +4,6 @@ import com.budinverse.medusa.core.transactionAsync
 import com.budinverse.medusa.models.ExecResult
 import com.budinverse.medusa.models.TransactionResult.Err
 import com.budinverse.medusa.models.TransactionResult.Ok
-import com.budinverse.medusa.utils.get
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
@@ -93,14 +92,14 @@ suspend fun insertAsync() {
     lateinit var exr2: ExecResult
 
     val ins1 = transactionAsync {
-        exr = insert {
+        insert {
             statement = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
             values = arrayOf("jeff111", 19)
-        }.resultSet!![1] ?: -1
+        }
     }
 
     val ins2 = transactionAsync {
-        exr2 = insert {
+        insert {
             statement = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
             values = arrayOf("jeff111", 19)
         }
