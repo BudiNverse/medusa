@@ -75,13 +75,12 @@ class TransactionBuilder constructor(
     /**
      * DSL version of [exec]
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun exec(block: ExecBuilder.() -> Unit): ExecResult {
+    fun exec(block: ExecBuilder.() -> Unit) {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
-        return when (execBuilder.hasPreparedStatement) {
+        when (execBuilder.hasPreparedStatement) {
             true -> exec(execBuilder.statement, execBuilder.values)
             else -> exec(execBuilder.statement)
         }
@@ -91,45 +90,41 @@ class TransactionBuilder constructor(
      * DSL version of [exec]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun insert(block: ExecBuilder.() -> Unit): ExecResult {
+    fun insert(block: ExecBuilder.() -> Unit) {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
-        return insert(execBuilder.statement, execBuilder.values)
+        insert(execBuilder.statement, execBuilder.values)
     }
 
     /**
      * DSL version of [exec]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun update(block: ExecBuilder.() -> Unit): ExecResult {
+    fun update(block: ExecBuilder.() -> Unit) {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
-        return insert(execBuilder.statement, execBuilder.values)
+        insert(execBuilder.statement, execBuilder.values)
     }
 
     /**
      * DSL version of [exec]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun delete(block: ExecBuilder.() -> Unit): ExecResult {
+    fun delete(block: ExecBuilder.() -> Unit) {
         val execBuilder = ExecBuilder()
         block(execBuilder)
 
-        return insert(execBuilder.statement, execBuilder.values)
+        insert(execBuilder.statement, execBuilder.values)
     }
 
     /**
      * DSL version of [query]
      * @param block Block that sets [QueryBuilder] and uses it for operations
-     * @return [QueryResult]
      */
     fun <T> query(block: QueryBuilder<T>.() -> Unit) {
         val queryBuilder = QueryBuilder<T>()
@@ -141,7 +136,6 @@ class TransactionBuilder constructor(
     /**
      * DSL version of [queryList]
      * @param block Block that sets [QueryBuilder] and uses it for operations
-     * @return [QueryResult]
      */
     fun <T> queryList(block: QueryBuilder<T>.() -> Unit) {
         val queryBuilder = QueryBuilder<T>()
@@ -155,12 +149,12 @@ class TransactionBuilder constructor(
      * Executes raw SQL String without using any preparedStatements
      * @param statement
      */
-    fun exec(statement: String): ExecResult {
+    fun exec(statement: String) {
         val rowsMutated = connection.prepareStatement(statement).executeUpdate()
-        return ExecResult(rowsMutated)
+        results.add(ExecResult(rowsMutated))
     }
 
-    fun exec(statement: String, psValues: Array<Any?> = arrayOf()): ExecResult {
+    fun exec(statement: String, psValues: Array<Any?> = arrayOf()) {
         val ps: PreparedStatement = if (databaseConfig.generatedKeySupport)
             connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
         else
@@ -180,9 +174,9 @@ class TransactionBuilder constructor(
         val rowsMutated = ps.executeUpdate()
         val rs: ResultSet = ps.generatedKeys
 
-        return when {
-            databaseConfig.generatedKeySupport && rs.next() -> ExecResult(rowsMutated, rs)
-            else -> ExecResult(rowsMutated)
+        when {
+            databaseConfig.generatedKeySupport && rs.next() -> results.add(ExecResult(rowsMutated, rs))
+            else -> results.add(ExecResult(rowsMutated))
         }
     }
 
