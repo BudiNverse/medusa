@@ -87,7 +87,7 @@ class TransactionBuilder constructor(
     }
 
     /**
-     * DSL version of [exec]
+     * DSL version of [insert]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
@@ -99,7 +99,7 @@ class TransactionBuilder constructor(
     }
 
     /**
-     * DSL version of [exec]
+     * DSL version of [update]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
@@ -111,7 +111,7 @@ class TransactionBuilder constructor(
     }
 
     /**
-     * DSL version of [exec]
+     * DSL version of [delete]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
