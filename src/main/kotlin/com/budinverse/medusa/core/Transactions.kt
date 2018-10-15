@@ -221,10 +221,10 @@ class TransactionBuilder constructor(
     }
 
     fun finalize() {
-        pss.forEach { println("\u001B[36m[medusa]: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount} \u001B[0m") }
+        pss.forEach { println("\u001B[36m[medusa]\u001B[0m: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
         connection.commit()
         pss.map(PreparedStatement::close)
         connection.close()
-        println("\u001B[33m[medusa]: Closing connection: ${this.connection} \u001B[0m")
+        println("\u001B[33m[medusa]\u001B[0m: Closing connection: ${this.connection}")
     }
 }

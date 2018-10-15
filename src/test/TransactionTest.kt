@@ -6,7 +6,6 @@ import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.get
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.math.BigInteger
 import java.sql.ResultSet
 
 
@@ -96,7 +95,7 @@ class TransactionTest {
     fun txn() {
         lateinit var qr: List<Person>
         var person: Person? = null
-        lateinit var execResult: ExecResult<BigInteger>
+        lateinit var execResult: ExecResult<Int>
         lateinit var resList: List<Any?>
 
         val transaction = transaction {
@@ -122,7 +121,7 @@ class TransactionTest {
 
         when (transaction) {
             is Ok -> {
-                execResult = transaction.res[0] as ExecResult<BigInteger>
+                execResult = transaction.res[0] as ExecResult<Int>
                 qr = transaction.res[1] as List<Person>
                 person = transaction.res[2] as? Person
                 resList = transaction.res
