@@ -92,10 +92,11 @@ class TransactionTest {
     }
 
     @Test
-    fun queryListTest() {
+    fun txn() {
         lateinit var qr: List<Person>
-        lateinit var person: Person
+        var person: Person? = null
         lateinit var execResult: ExecResult
+        lateinit var resList: List<Any?>
 
         val transaction = transaction {
             insert {
@@ -110,7 +111,7 @@ class TransactionTest {
 
             query<Person> {
                 statement = DummyData.query
-                values = arrayOf("zeon111")
+                values = arrayOf("zeon000")
                 type = ::Person
             }
         }
@@ -119,13 +120,16 @@ class TransactionTest {
             is Ok -> {
                 execResult = transaction.res[0] as ExecResult
                 qr = transaction.res[1] as List<Person>
-                person = transaction.res[2] as Person
+                person = transaction.res[2] as? Person
+                resList = transaction.res
 
             }
             is Err -> throw IllegalStateException()
         }
 
-        println(execResult)
+        println(resList)
+
+        println(execResult.resultSet?.get<Int>(1))
         println(qr)
         println(person)
     }

@@ -195,6 +195,7 @@ class TransactionBuilder constructor(
 
         when {
             resultSet.next() -> results.add(transform(resultSet))
+            else -> results.add(null)
         }
 
     }
