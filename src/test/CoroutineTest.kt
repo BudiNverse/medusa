@@ -89,17 +89,17 @@ suspend fun queryPersonAsync() {
 
 suspend fun insertAsync() {
     var exr: Int = -1
-    lateinit var exr2: ExecResult
+    var exr2: ExecResult<Int>? = null
 
     val ins1 = transactionAsync {
-        insert {
+        insert<Int> {
             statement = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
             values = arrayOf("jeff111", 19)
         }
     }
 
     val ins2 = transactionAsync {
-        insert {
+        insert<Int> {
             statement = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
             values = arrayOf("jeff111", 19)
         }

@@ -1,6 +1,9 @@
 package com.budinverse.medusa.models
 
-open class ExecBuilder(var statement: String = "",
-                       var values: Array<Any?> = arrayOf(),
-                       var hasPreparedStatement: Boolean = true)
+import java.sql.ResultSet
+
+open class ExecBuilder<T>(var statement: String = "",
+                          var values: Array<Any?> = arrayOf(),
+                          var hasPreparedStatement: Boolean = true,
+                          open var type: ((ResultSet) -> T)? = null)
 

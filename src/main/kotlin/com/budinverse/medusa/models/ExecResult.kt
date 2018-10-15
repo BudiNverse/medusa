@@ -1,6 +1,5 @@
 package com.budinverse.medusa.models
 
-import java.sql.ResultSet
 
-data class ExecResult(val rowsMutated: Int, val resultSet: ResultSet? = null)
+data class ExecResult<T>(val rowsMutated: Int, val transformed: T? = null)
 

@@ -6,7 +6,7 @@ import java.util.*
 /**
  * Sets your config
  * Creates a DatabaseConfig object based on user
- * specified resultSet ie.
+ * specified type ie.
  * - databaseUser
  * - databasePassword
  * - databaseUrl

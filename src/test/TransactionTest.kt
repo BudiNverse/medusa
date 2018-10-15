@@ -6,6 +6,7 @@ import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.get
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.math.BigInteger
 import java.sql.ResultSet
 
 
@@ -48,9 +49,9 @@ class TransactionTest {
 
     @Test
     fun insertTest() {
-        var ins: ExecResult? = null
+        var ins: ExecResult<Int>? = null
         transaction {
-            insert {
+            insert<Int> {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[0].name, DummyData.persons[0].age)
             }
@@ -63,7 +64,7 @@ class TransactionTest {
     @Test
     fun updateTest() {
         transaction {
-            update {
+            update<Int> {
                 statement = DummyData.update
                 values = arrayOf(DummyData.persons[1].name, DummyData.persons[1].age, DummyData.persons[0].name)
             }
@@ -72,16 +73,16 @@ class TransactionTest {
 
     @Test
     fun transactionTest() {
-        var ins: ExecResult? = null
-        var upt: ExecResult? = null
+        var ins: ExecResult<Int>? = null
+        var upt: ExecResult<Int>? = null
 
         transaction {
-            insert {
+            insert<Int> {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[2].name, DummyData.persons[2].age)
             }
 
-            update {
+            update<Int> {
                 statement = DummyData.update
                 values = arrayOf(DummyData.persons[3].name, DummyData.persons[3].age, DummyData.persons[2].name)
             }
@@ -95,13 +96,16 @@ class TransactionTest {
     fun txn() {
         lateinit var qr: List<Person>
         var person: Person? = null
-        lateinit var execResult: ExecResult
+        lateinit var execResult: ExecResult<BigInteger>
         lateinit var resList: List<Any?>
 
         val transaction = transaction {
-            insert {
+            insert<Int> {
                 statement = DummyData.insert
                 values = arrayOf("jeff", 19)
+                type = {
+                    it[1]
+                }
             }
 
             queryList<Person> {
@@ -118,7 +122,7 @@ class TransactionTest {
 
         when (transaction) {
             is Ok -> {
-                execResult = transaction.res[0] as ExecResult
+                execResult = transaction.res[0] as ExecResult<BigInteger>
                 qr = transaction.res[1] as List<Person>
                 person = transaction.res[2] as? Person
                 resList = transaction.res
@@ -128,8 +132,7 @@ class TransactionTest {
         }
 
         println(resList)
-
-        println(execResult.resultSet?.get<Int>(1))
+        println(execResult.transformed)
         println(qr)
         println(person)
     }
@@ -154,7 +157,7 @@ class TransactionTest {
     }
 
     private fun insertUser(person: Person) = transaction {
-        exec {
+        exec<Int> {
             //language=MySQL
             statement = "UPDATE medusa_test.person SET name = ? WHERE id = ?"
             values = arrayOf(person.name, 1)

@@ -76,13 +76,13 @@ class TransactionBuilder constructor(
      * DSL version of [exec]
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
-    fun exec(block: ExecBuilder.() -> Unit) {
-        val execBuilder = ExecBuilder()
+    fun <T> exec(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
         when (execBuilder.hasPreparedStatement) {
-            true -> exec(execBuilder.statement, execBuilder.values)
-            else -> exec(execBuilder.statement)
+            true -> exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+            else -> exec<T>(execBuilder.statement)
         }
     }
 
@@ -91,11 +91,11 @@ class TransactionBuilder constructor(
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
-    fun insert(block: ExecBuilder.() -> Unit) {
-        val execBuilder = ExecBuilder()
+    fun <T> insert(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
-        insert(execBuilder.statement, execBuilder.values)
+        exec(execBuilder.statement, execBuilder.values, execBuilder.type)
     }
 
     /**
@@ -103,11 +103,11 @@ class TransactionBuilder constructor(
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
-    fun update(block: ExecBuilder.() -> Unit) {
-        val execBuilder = ExecBuilder()
+    fun <T> update(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
-        insert(execBuilder.statement, execBuilder.values)
+        exec(execBuilder.statement, execBuilder.values, execBuilder.type)
     }
 
     /**
@@ -115,11 +115,11 @@ class TransactionBuilder constructor(
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
-    fun delete(block: ExecBuilder.() -> Unit) {
-        val execBuilder = ExecBuilder()
+    fun <T> delete(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
-        insert(execBuilder.statement, execBuilder.values)
+        exec(execBuilder.statement, execBuilder.values, execBuilder.type)
     }
 
     /**
@@ -142,19 +142,19 @@ class TransactionBuilder constructor(
         block(queryBuilder)
 
         queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
-                ?: throw IllegalArgumentException("Type with `resultSet` constructor not provided!")
+                ?: throw IllegalArgumentException("Type with `type` constructor not provided!")
     }
 
     /**
      * Executes raw SQL String without using any preparedStatements
      * @param statement
      */
-    fun exec(statement: String) {
+    fun <T> exec(statement: String) {
         val rowsMutated = connection.prepareStatement(statement).executeUpdate()
-        results.add(ExecResult(rowsMutated))
+        results.add(ExecResult<T>(rowsMutated))
     }
 
-    fun exec(statement: String, psValues: Array<Any?> = arrayOf()) {
+    fun <T> exec(statement: String, psValues: Array<Any?> = arrayOf(), transform: ((ResultSet) -> T)? = null) {
         val ps: PreparedStatement = if (databaseConfig.generatedKeySupport)
             connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
         else
@@ -167,7 +167,7 @@ class TransactionBuilder constructor(
             "Number of values does not match number of parameters in preparedStatement!"
         }
 
-        // set resultSet to preparedStatement from psValues
+        // set type to preparedStatement from psValues
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
@@ -175,8 +175,8 @@ class TransactionBuilder constructor(
         val rs: ResultSet = ps.generatedKeys
 
         when {
-            databaseConfig.generatedKeySupport && rs.next() -> results.add(ExecResult(rowsMutated, rs))
-            else -> results.add(ExecResult(rowsMutated))
+            databaseConfig.generatedKeySupport && rs.next() -> results.add(ExecResult(rowsMutated, transform?.invoke(rs)))
+            else -> results.add(ExecResult<T>(rowsMutated))
         }
     }
 
@@ -219,10 +219,6 @@ class TransactionBuilder constructor(
 
         results.add(list)
     }
-
-    fun insert(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
-    fun update(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
-    fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
 
     fun finalize() {
         pss.forEach { println("\u001B[36m[medusa]: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount} \u001B[0m") }
