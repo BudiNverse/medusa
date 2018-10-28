@@ -49,11 +49,19 @@ class TransactionTest {
     @Test
     fun insertTest() {
         var ins: ExecResult<Int>? = null
-        transaction {
+        val tx = transaction {
             insert<Int> {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[0].name, DummyData.persons[0].age)
+                type = {
+                    it[0]
+                }
             }
+        }
+
+        when (tx) {
+            is Ok -> ins = tx.res[0] as ExecResult<Int>
+            is Err -> println(tx.e)
         }
 
         println(ins)
