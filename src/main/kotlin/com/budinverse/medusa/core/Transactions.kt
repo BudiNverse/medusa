@@ -1,6 +1,6 @@
 package com.budinverse.medusa.core
 
-import com.budinverse.medusa.config.DatabaseConfig.Companion.databaseConfig
+import com.budinverse.medusa.config.MedusaConfig.Companion.medusaConfig
 import com.budinverse.medusa.models.ExecBuilder
 import com.budinverse.medusa.models.ExecResult
 import com.budinverse.medusa.models.QueryBuilder
@@ -8,7 +8,7 @@ import com.budinverse.medusa.models.TransactionResult
 import com.budinverse.medusa.models.TransactionResult.Err
 import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.*
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.*
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -54,11 +54,12 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
  * - queryList
  * @return Deferred [TransactionResult]
  */
-fun transactionAsync(block: TransactionBuilder.() -> Unit) = async {
-    transaction {
-        block()
-    }
-}
+fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: TransactionBuilder.() -> Unit): Deferred<TransactionResult> =
+        CoroutineScope(dispatcher).async {
+            transaction {
+                block()
+            }
+        }
 
 class TransactionBuilder constructor(
         val connection: Connection = getDatabaseConnection(),
@@ -155,7 +156,7 @@ class TransactionBuilder constructor(
     }
 
     fun <T> exec(statement: String, psValues: Array<Any?> = arrayOf(), transform: ((ResultSet) -> T)? = null) {
-        val ps: PreparedStatement = if (databaseConfig.generatedKeySupport)
+        val ps: PreparedStatement = if (medusaConfig.generatedKeySupport)
             connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
         else
             connection.prepareStatement(statement)
@@ -171,11 +172,11 @@ class TransactionBuilder constructor(
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
-        val rowsMutated = ps.executeUpdate()
+        val rowsMutated: Int = ps.executeUpdate()
         val rs: ResultSet = ps.generatedKeys
 
         when {
-            databaseConfig.generatedKeySupport && rs.next() -> results.add(ExecResult(rowsMutated, transform?.invoke(rs)))
+            medusaConfig.generatedKeySupport && rs.next() -> results.add(ExecResult(rowsMutated, transform?.invoke(rs)))
             else -> results.add(ExecResult<T>(rowsMutated))
         }
     }
@@ -191,6 +192,7 @@ class TransactionBuilder constructor(
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
+
         val resultSet: ResultSet = ps.executeQuery()
 
         when {
@@ -201,8 +203,8 @@ class TransactionBuilder constructor(
     }
 
     fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
-        val list = mutableListOf<T>()
-        val ps = connection.prepareStatement(statement)
+        val list: MutableList<T> = mutableListOf<T>()
+        val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
 
         require(ps.parameterMetaData.parameterCount == psValues.size) {

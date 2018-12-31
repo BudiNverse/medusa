@@ -54,7 +54,7 @@ class TransactionTest {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[0].name, DummyData.persons[0].age)
                 type = {
-                    it[0]
+                    it[1]
                 }
             }
         }
@@ -64,7 +64,7 @@ class TransactionTest {
             is Err -> println(tx.e)
         }
 
-        println(ins)
+        println(ins?.transformed)
         assertEquals(1, ins?.rowsMutated)
     }
 

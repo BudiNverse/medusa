@@ -1,6 +1,6 @@
 package com.budinverse.medusa.utils
 
-import com.budinverse.medusa.config.DatabaseConfig.Companion.databaseConfig
+import com.budinverse.medusa.config.MedusaConfig.Companion.medusaConfig
 import java.sql.Connection
 import java.sql.DriverManager
 
@@ -9,8 +9,8 @@ import java.sql.DriverManager
  * @return Connection
  */
 fun getDatabaseConnection(): Connection {
-    Class.forName(databaseConfig.driver)
-    return DriverManager.getConnection(databaseConfig.databaseUrl,
-            databaseConfig.databaseUser,
-            databaseConfig.databasePassword.toString())
+    Class.forName(medusaConfig.driver)
+    return DriverManager.getConnection(medusaConfig.databaseUrl,
+            medusaConfig.databaseUser,
+            medusaConfig.databasePassword.toString())
 }

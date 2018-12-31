@@ -4,9 +4,9 @@ import com.budinverse.medusa.core.transactionAsync
 import com.budinverse.medusa.models.ExecResult
 import com.budinverse.medusa.models.TransactionResult.Err
 import com.budinverse.medusa.models.TransactionResult.Ok
-import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
 
 fun main(args: Array<String>) = runBlocking {
     dbConfig {
@@ -20,9 +20,40 @@ fun main(args: Array<String>) = runBlocking {
     }
 
     queryPersonAsync()
-    //queryList()
-    //insertAsync()
 }
+
+suspend fun queryPersonAsync() {
+    var person: Person? = null
+    var person2: Person? = null
+    val txn1 = transactionAsync {
+        query<Person> {
+            statement = DummyData.query
+            values = arrayOf("budi")
+            type = ::Person
+        }
+    }
+    val txn2 = transactionAsync {
+        query<Person> {
+            statement = DummyData.query
+            values = arrayOf("budi2")
+            type = ::Person
+        }
+    }
+
+    person = when (val results = txn1.await()) {
+        is Ok -> results.res[0] as? Person
+        is Err -> null
+    }
+
+    person2 = when (val results = txn2.await()) {
+        is Ok -> results.res[0] as? Person
+        is Err -> null
+    }
+
+    println("${System.currentTimeMillis()} : $person")
+    println("${System.currentTimeMillis()} : $person2")
+}
+
 
 fun queryList() {
     lateinit var personList: List<Person>
@@ -40,51 +71,6 @@ fun queryList() {
 
 
     println("${System.currentTimeMillis()} : $personList")
-}
-
-
-suspend fun queryPersonAsync() {
-    var person: Person? = null
-    var person2: Person? = null
-
-    val txn1 = transactionAsync {
-        query<Person> {
-            statement = DummyData.query
-            values = arrayOf("zeon111")
-            type = ::Person
-        }
-    }
-
-    val txn2 = transactionAsync {
-        query<Person> {
-            statement = DummyData.query
-            values = arrayOf("zeon111")
-            type = ::Person
-        }
-    }
-
-    // you have to await both transactions
-    // before using person and person2
-    // else there will be a data race
-    // and it will print null
-    // which is what was initialized with
-    val awaitedTxn1 = txn1.await()
-    val awaitedTxn2 = txn2.await()
-
-    person = when (awaitedTxn1) {
-        is Ok -> awaitedTxn1.res[0] as Person
-        is Err -> null
-    }
-
-    person2 = when (awaitedTxn2) {
-        is Ok -> awaitedTxn2.res[0] as Person
-        is Err -> null
-    }
-
-    println("${System.currentTimeMillis()} : $person")
-    println("${System.currentTimeMillis()} : $person2")
-
-    delay(2000)
 }
 
 suspend fun insertAsync() {

@@ -5,54 +5,54 @@ import java.util.*
 
 /**
  * Sets your config
- * Creates a DatabaseConfig object based on user
+ * Creates a MedusaConfig object based on user
  * specified type ie.
  * - databaseUser
  * - databasePassword
  * - databaseUrl
  * - driver
- * @param block Users can set parameters for DatabaseConfig in this block
+ * @param block Users can set parameters for MedusaConfig in this block
  */
-fun dbConfig(block: DatabaseConfig.() -> Unit) {
-    val config = DatabaseConfig()
+fun dbConfig(block: MedusaConfig.() -> Unit) {
+    val config = MedusaConfig()
     block(config)
-    DatabaseConfig.databaseConfig = config
+    MedusaConfig.medusaConfig = config
 }
 
 
 /**
- * @constructor Creates a DatabaseConfig object
+ * @constructor Creates a MedusaConfig object
  * @property databaseUser User for your database
  * @property databasePassword Password for your database
  * @property databaseUrl URL to access your database
  * @property driver Database driver
  * @property generatedKeySupport Whether database supports generatedKey
  */
-class DatabaseConfig(var databaseUser: String? = null,
-                     var databasePassword: String? = null,
-                     var databaseUrl: String? = null,
-                     var driver: String? = null,
-                     var generatedKeySupport: Boolean = true) {
+class MedusaConfig(var databaseUser: String? = null,
+                   var databasePassword: String? = null,
+                   var databaseUrl: String? = null,
+                   var driver: String? = null,
+                   var generatedKeySupport: Boolean = true) {
     companion object {
         /**
-         * Uninitialised DatabaseConfig
+         * Uninitialised MedusaConfig
          * Has to be initialised if being used ಠ_ಠ
          */
-        lateinit var databaseConfig: DatabaseConfig
+        lateinit var medusaConfig: MedusaConfig
 
         /**
          * Sets database config using a properties file
          * @param configFileDir Directory where the config file lives. Format is .properties
-         * Default file name is "databaseConfig.properties"
+         * Default file name is "medusaConfig.properties"
          */
-        fun setConfig(configFileDir: String = "databaseConfig.properties") {
+        fun setConfig(configFileDir: String = "medusaConfig.properties") {
             val properties = Properties()
             val input = FileInputStream(configFileDir)
 
             properties.load(input)
 
             // creates a the configuration from a file
-            databaseConfig = DatabaseConfig(databaseUser = properties.getProperty("databaseUser"),
+            medusaConfig = MedusaConfig(databaseUser = properties.getProperty("databaseUser"),
                     databasePassword = properties.getProperty("databasePassword"),
                     databaseUrl = properties.getProperty("databaseUrl"),
                     driver = properties.getProperty("driver"),
@@ -61,10 +61,10 @@ class DatabaseConfig(var databaseUser: String? = null,
 
         /**
          * Sets a database config programmatically
-         * @param databaseConfig
+         * @param medusaConfig
          */
-        fun setConfig(databaseConfig: DatabaseConfig) {
-            this.databaseConfig = databaseConfig
+        fun setConfig(medusaConfig: MedusaConfig) {
+            this.medusaConfig = medusaConfig
         }
     }
 }
