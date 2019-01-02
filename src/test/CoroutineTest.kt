@@ -15,6 +15,7 @@ fun main(args: Array<String>) = runBlocking {
         databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
         driver = "com.mysql.cj.jdbc.Driver"
     }
+
     launch {
         queryPersonAsync()
     }

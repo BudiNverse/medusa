@@ -45,6 +45,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
 /**
  * Asynchronous version of transaction
  * @see transaction
+ * @param dispatcher Coroutine Dispatcher, default is Dispatchers.IO
  * @param block Takes in functions that are available in TransactionBuilder ie.
  * - exec
  * - insert
@@ -54,7 +55,8 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
  * - queryList
  * @return Deferred [TransactionResult]
  */
-fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO, block: TransactionBuilder.() -> Unit): Deferred<TransactionResult> =
+fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO,
+                     block: TransactionBuilder.() -> Unit): Deferred<TransactionResult> =
         CoroutineScope(dispatcher).async {
             transaction {
                 block()
