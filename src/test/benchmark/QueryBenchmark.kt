@@ -13,10 +13,17 @@ suspend fun main(args: Array<String>) {
         databasePassword = "12345"
         databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
         driver = "com.mysql.cj.jdbc.Driver"
+        connectionPool = connectionPool {
+            minimumIdle = 10
+            maximumPoolSize = 15
+            addDataSourceProperty("cachePrepStmts", "true")
+            addDataSourceProperty("prepStmtCacheSize", "250")
+            addDataSourceProperty("prepStmtCacheSqlLimit", "2048")
+        }
     }
 
-    QueryBenchmark.runBenchmark()
-    //QueryBenchmarkAsync.runBenchmark()
+    //QueryBenchmark.runBenchmark()
+    QueryBenchmarkAsync.runBenchmark()
 }
 
 
@@ -78,7 +85,6 @@ object QueryBenchmarkAsync {
             }
         }
 
-        println(listOfList.size)
-        println("\u001B[33m[medusa]\u001B[0m: It took $time ms to complete insert async benchmark")
+        println("\u001B[33m[medusa]\u001B[0m: It took $time ms to complete query async benchmark")
     }
 }

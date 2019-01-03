@@ -5,6 +5,7 @@ import com.budinverse.medusa.config.dbConfig
 import com.budinverse.medusa.core.transaction
 import com.budinverse.medusa.core.transactionAsync
 import com.budinverse.medusa.utils.get
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
 
 suspend fun main(args: Array<String>) {
@@ -16,6 +17,7 @@ suspend fun main(args: Array<String>) {
     }
 
     InsertBenchmarkAsync.runBenchmark()
+    //InsertBenchmark.runBenchmark()
 }
 
 object InsertBenchmark {
@@ -57,7 +59,7 @@ object InsertBenchmarkAsync {
 
     private fun generatePersons(): List<Person> {
         val personList: ArrayList<Person> = arrayListOf()
-        for (i in 1..1_00_00) {
+        for (i in 1..1_000_0) {
             personList.add(Person(name = "person$i", age = i))
         }
 
@@ -66,6 +68,7 @@ object InsertBenchmarkAsync {
 
     suspend fun runBenchmark() {
         val persons = generatePersons()
+        val counter = AtomicInteger(0)
         val time = measureTimeMillis {
             val jobs = List(persons.size) { i ->
                 transactionAsync {
@@ -76,14 +79,14 @@ object InsertBenchmarkAsync {
                             it[1]
                         }
                     }
+                    //counter.addAndGet(1)
                 }
             }
-
             jobs.forEach { it.join() }
-
         }
 
         println("\u001B[33m[medusa]\u001B[0m: It took $time ms to complete insert async benchmark")
+        //println("\u001B[33m[medusa]\u001B[0m: $counter insertions")
     }
 
 

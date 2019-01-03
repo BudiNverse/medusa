@@ -1,5 +1,6 @@
 package com.budinverse.medusa.core
 
+import com.budinverse.medusa.config.MedusaConfig
 import com.budinverse.medusa.config.MedusaConfig.Companion.medusaConfig
 import com.budinverse.medusa.models.ExecBuilder
 import com.budinverse.medusa.models.ExecResult
@@ -34,7 +35,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
             Ok(this.results)
         } catch (e: Exception) {
             e.printStackTrace()
-            connection.rollback()
+            //connection.rollback()
             Err(e)
         } finally {
             finalize()
@@ -64,7 +65,7 @@ fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO,
         }
 
 class TransactionBuilder constructor(
-        val connection: Connection = getDatabaseConnection(),
+        private val connection: Connection = MedusaConfig.medusaConfig.connectionPool.connection,
         val block: TransactionBuilder.() -> Unit) {
 
     internal val results: MutableList<Any?> = arrayListOf()
@@ -72,7 +73,7 @@ class TransactionBuilder constructor(
     private val pss: MutableList<PreparedStatement> = mutableListOf()
 
     init {
-        connection.autoCommit = false
+        //connection.autoCommit = false
     }
 
     /**
@@ -175,11 +176,12 @@ class TransactionBuilder constructor(
             ps[i] = psValues[i - 1]
         }
         val rowsMutated: Int = ps.executeUpdate()
-        val rs: ResultSet = ps.generatedKeys
+        val resultSet: ResultSet = ps.generatedKeys
 
         when {
-            medusaConfig.generatedKeySupport && rs.next() -> results.add(ExecResult(rowsMutated, transform?.invoke(rs)))
-            else -> results.add(ExecResult<T>(rowsMutated))
+            medusaConfig.generatedKeySupport && resultSet.next() ->
+                results.add(ExecResult(rowsMutated, transform?.invoke(resultSet))).run { resultSet.close() }
+            else -> results.add(ExecResult<T>(rowsMutated)).run { resultSet.close() }
         }
     }
 
@@ -198,14 +200,14 @@ class TransactionBuilder constructor(
         val resultSet: ResultSet = ps.executeQuery()
 
         when {
-            resultSet.next() -> results.add(transform(resultSet))
-            else -> results.add(null)
+            resultSet.next() -> results.add(transform(resultSet)).run { resultSet.close() }
+            else -> results.add(null).run { resultSet.close() }
         }
 
     }
 
     fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
-        val list: MutableList<T> = mutableListOf<T>()
+        val list: MutableList<T> = mutableListOf()
         val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
 
@@ -222,13 +224,13 @@ class TransactionBuilder constructor(
             list.add(transform(resultSet))
 
         results.add(list)
+        resultSet.close()
     }
 
     fun finalize() {
         pss.forEach { println("\u001B[36m[medusa]\u001B[0m: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
-        connection.commit()
         pss.map(PreparedStatement::close)
+        println("\u001B[33m[medusa]\u001B[0m: Returning connection: ${this.connection}")
         connection.close()
-        println("\u001B[33m[medusa]\u001B[0m: Closing connection: ${this.connection}")
     }
 }

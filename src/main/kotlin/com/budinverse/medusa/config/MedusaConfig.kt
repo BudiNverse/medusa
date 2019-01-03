@@ -1,5 +1,7 @@
 package com.budinverse.medusa.config
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import java.io.FileInputStream
 import java.util.*
 
@@ -19,20 +21,25 @@ fun dbConfig(block: MedusaConfig.() -> Unit) {
     MedusaConfig.medusaConfig = config
 }
 
-
-/**
- * @constructor Creates a MedusaConfig object
- * @property databaseUser User for your database
- * @property databasePassword Password for your database
- * @property databaseUrl URL to access your database
- * @property driver Database driver
- * @property generatedKeySupport Whether database supports generatedKey
- */
-class MedusaConfig(var databaseUser: String? = null,
-                   var databasePassword: String? = null,
-                   var databaseUrl: String? = null,
-                   var driver: String? = null,
+class MedusaConfig(var databaseUser: String = "",
+                   var databasePassword: String = "",
+                   var databaseUrl: String = "",
+                   var driver: String = "",
                    var generatedKeySupport: Boolean = true) {
+
+    lateinit var connectionPool: HikariDataSource
+
+    fun connectionPool(block: HikariConfig.() -> Unit): HikariDataSource {
+        val hikariConfig = HikariConfig().apply {
+            jdbcUrl = this@MedusaConfig.databaseUrl
+            username = this@MedusaConfig.databaseUser
+            password = this@MedusaConfig.databasePassword
+        }
+
+        block(hikariConfig)
+        return HikariDataSource(hikariConfig)
+    }
+
     companion object {
         /**
          * Uninitialised MedusaConfig
