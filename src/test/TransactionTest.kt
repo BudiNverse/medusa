@@ -20,12 +20,14 @@ data class Person(val id: Int = 0,
 }
 
 object DummyData {
-
-
+    // language=MySQL
     const val insert = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
+    // language=MySQL
     const val query = "SELECT * FROM medusa_test.Person WHERE name = ?"
+    // language=MySQL
     const val queryList = "SELECT * FROM medusa_test.Person"
-    const val update = "UPDATE medusa_test.Person SET name = ?, age = ? WHERE name = ?"
+    // language=MySQL
+    const val update = "UPDATE medusa_test.Person SET name = ?, age = ? WHERE id = ?"
 
     val persons = arrayOf(
             Person(name = "zeon000", age = 19),
@@ -43,6 +45,13 @@ class TransactionTest {
             databasePassword = "12345"
             databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
             driver = "com.mysql.cj.jdbc.Driver"
+            connectionPool = connectionPool {
+                minimumIdle = 10
+                maximumPoolSize = 15
+                addDataSourceProperty("cachePrepStmts", "true")
+                addDataSourceProperty("prepStmtCacheSize", "250")
+                addDataSourceProperty("prepStmtCacheSqlLimit", "2048")
+            }
         }
     }
 
@@ -70,33 +79,20 @@ class TransactionTest {
 
     @Test
     fun updateTest() {
-        transaction {
+        var rowsMutated = 0
+        val tx = transaction {
             update<Int> {
                 statement = DummyData.update
-                values = arrayOf(DummyData.persons[1].name, DummyData.persons[1].age, DummyData.persons[0].name)
-            }
-        }
-    }
-
-    @Test
-    fun transactionTest() {
-        var ins: ExecResult<Int>? = null
-        var upt: ExecResult<Int>? = null
-
-        transaction {
-            insert<Int> {
-                statement = DummyData.insert
-                values = arrayOf(DummyData.persons[2].name, DummyData.persons[2].age)
-            }
-
-            update<Int> {
-                statement = DummyData.update
-                values = arrayOf(DummyData.persons[3].name, DummyData.persons[3].age, DummyData.persons[2].name)
+                values = arrayOf(DummyData.persons[1].name, DummyData.persons[1].age, 1)
             }
         }
 
-        assertEquals(1, ins?.rowsMutated)
-        assertEquals(1, upt?.rowsMutated)
+        when (tx) {
+            is Ok -> rowsMutated = (tx.res[0] as ExecResult<Int>).rowsMutated
+            is Err -> println(tx.e)
+        }
+
+        assertEquals(1, rowsMutated)
     }
 
     @Test
@@ -105,6 +101,7 @@ class TransactionTest {
         var person: Person? = null
         lateinit var execResult: ExecResult<Int>
         lateinit var resList: List<Any?>
+        lateinit var updateRes: ExecResult<Int>
 
         val transaction = transaction {
             insert<Int> {
@@ -113,6 +110,11 @@ class TransactionTest {
                 type = {
                     it[1]
                 }
+            }
+
+            update<Int> {
+                statement = DummyData.update
+                values = arrayOf("zeon420", 19, 1)
             }
 
             queryList<Person> {
@@ -130,18 +132,23 @@ class TransactionTest {
         when (transaction) {
             is Ok -> {
                 execResult = transaction.res[0] as ExecResult<Int>
-                qr = transaction.res[1] as List<Person>
-                person = transaction.res[2] as? Person
+                updateRes = transaction.res[1] as ExecResult<Int>
+                qr = transaction.res[2] as List<Person>
+                person = transaction.res[3] as? Person
                 resList = transaction.res
 
             }
-            is Err -> throw IllegalStateException()
+            is Err -> println(transaction.e)
         }
+
+        //PK
+        assertEquals(1, execResult.transformed)
 
         println(resList)
         println(execResult.transformed)
         println(qr)
         println(person)
+        println(updateRes)
     }
 
     @Test

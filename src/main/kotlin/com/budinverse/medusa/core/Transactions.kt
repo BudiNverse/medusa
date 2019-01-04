@@ -29,7 +29,7 @@ import java.sql.Statement
  * @return [TransactionResult]
  */
 fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
-    TransactionBuilder(block = block).run {
+    TransactionBuilder().run {
         return try {
             block()
             Ok(this.results)
@@ -65,12 +65,11 @@ fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO,
         }
 
 class TransactionBuilder constructor(
-        private val connection: Connection = MedusaConfig.medusaConfig.connectionPool.connection,
-        val block: TransactionBuilder.() -> Unit) {
+        private val connection: Connection = MedusaConfig.medusaConfig.connectionPool.connection) {
 
-    internal val results: MutableList<Any?> = arrayListOf()
+    internal val results: ArrayList<Any?> = arrayListOf()
 
-    private val pss: MutableList<PreparedStatement> = mutableListOf()
+    private val pss: ArrayList<PreparedStatement> = arrayListOf()
 
     init {
         //connection.autoCommit = false
@@ -153,16 +152,16 @@ class TransactionBuilder constructor(
      * Executes raw SQL String without using any preparedStatements
      * @param statement
      */
-    fun <T> exec(statement: String) {
+    private fun <T> exec(statement: String) {
         val rowsMutated = connection.prepareStatement(statement).executeUpdate()
         results.add(ExecResult<T>(rowsMutated))
     }
 
-    fun <T> exec(statement: String, psValues: Array<Any?> = arrayOf(), transform: ((ResultSet) -> T)? = null) {
-        val ps: PreparedStatement = if (medusaConfig.generatedKeySupport)
-            connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
-        else
-            connection.prepareStatement(statement)
+    private fun <T> exec(statement: String, psValues: Array<Any?> = arrayOf(), transform: ((ResultSet) -> T)? = null) {
+        val ps: PreparedStatement = when (medusaConfig.generatedKeySupport) {
+            true -> connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
+            else -> connection.prepareStatement(statement)
+        }
 
         pss += ps
 
@@ -185,7 +184,7 @@ class TransactionBuilder constructor(
         }
     }
 
-    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
+    private fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
         val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
 
@@ -206,9 +205,10 @@ class TransactionBuilder constructor(
 
     }
 
-    fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
-        val list: MutableList<T> = mutableListOf()
+    private fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
+        val list: ArrayList<T> = arrayListOf()
         val ps: PreparedStatement = connection.prepareStatement(statement)
+        lateinit var resultSet: ResultSet
         pss += ps
 
         require(ps.parameterMetaData.parameterCount == psValues.size) {
@@ -219,7 +219,8 @@ class TransactionBuilder constructor(
             ps[i] = psValues[i - 1]
         }
 
-        val resultSet: ResultSet = ps.executeQuery()
+        resultSet = ps.executeQuery()
+
         while (resultSet.next())
             list.add(transform(resultSet))
 
@@ -227,7 +228,7 @@ class TransactionBuilder constructor(
         resultSet.close()
     }
 
-    fun finalize() {
+    internal fun finalize() {
         pss.forEach { println("\u001B[36m[medusa]\u001B[0m: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
         pss.map(PreparedStatement::close)
         println("\u001B[33m[medusa]\u001B[0m: Returning connection: ${this.connection}")
