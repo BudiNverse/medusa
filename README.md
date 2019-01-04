@@ -251,9 +251,16 @@ This will print
 > As of now, since medusa is still not 1.0 yet, performance is **NOT** a focus yet.However
 if you looking for ballpark of how medusa performs, here they are
 
-###### Computer: Intel Core i7 3770k @ 4.3Ghz, 16GB @ 2000Mhz RAM, Samsung 850 EVO 500GB, Windows 10 Education, MySQL 8.0
-###### Medusa: Minimum 10, Maximum 15 connections in pool, Coroutines dispatched on `Dispatchers.IO` from standard library
-Insert (asynchronous): 0.3531 ms/record 
-Query (asynchronous): 0.0005159 ms/record (1000 concurrent queries with 10k record/query) 
+**Computer: Intel Core i7 3770k @ 4.3Ghz, 16GB @ 2000Mhz RAM, Samsung 850 EVO 500GB, Windows 10 Education, MySQL 8.0**
+**Medusa: Minimum 10, Maximum 15 connections in pool, Coroutines dispatched on `Dispatchers.IO` from standard library**
+Insert (asynchronous): 0.3531 ms/record
+
+Query (asynchronous): 0.00009854 ms/record (1000 concurrent queries with 50k record/query)
+
+**Computer: Macbook Pro (13-inch 2017) Intel Core i5 2.3Ghz, 8GB @ 2133Mhz**
+**Medusa: Minimum 10, Maximum 15 connections in pool, Coroutines dispatched on `Dispatchers.IO` from standard library**
+Insert (asynchronous): 0.1757 ms/record
+
+Query (asynchronous): 0.00017972 ms/record (1000 concurrent queries with 50k record/query) 
 
 
