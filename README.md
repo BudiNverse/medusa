@@ -21,12 +21,13 @@ Medusa is not an ORM, it is just a utilities library to help you.
 - [x] Async Transaction
 - [x] DSL for setting of config
 - [x] Standard database operations (query, queryList, insert, exec)
-- [x] TransactionResult type
+- [x] `TransactionResult` type
 
 #### [0.0.2 Experimental - Possible breaking API changes]
 - [x] Reduce API differentiation for operation that returns a key and no key. (0.0.2)
 - [x] Extend config to have support for databases that cannot generate keys (0.0.2)
 - [x] Database `Connection` pooling using HikariCP
+- [x] Removed `TransactionResult` type 
  
 ### Planned changes/updates
 - [ ] Batch processing
