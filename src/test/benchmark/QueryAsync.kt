@@ -46,4 +46,8 @@ class QueryAsync(override val name: String = "QUERY_ASYNC",
         }
     }
 
+    override fun runBenchmark() {
+        throw NotImplementedError()
+    }
+
 }

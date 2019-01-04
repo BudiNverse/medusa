@@ -16,6 +16,7 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 
+
 /**
  * Starts a transaction
  * Automatically opens databaseConnection and closes it when all operations are done
@@ -66,8 +67,7 @@ fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO,
 class TransactionBuilder constructor(
         val connection: Connection = MedusaConfig.medusaConfig.connectionPool.connection) {
 
-    internal val results: ArrayList<Any?> = arrayListOf()
-
+    val results: ArrayList<Any?> = arrayListOf()
     private val pss: ArrayList<PreparedStatement> = arrayListOf()
 
     /**
@@ -75,7 +75,7 @@ class TransactionBuilder constructor(
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
     fun <T> exec(block: ExecBuilder<T>.() -> Unit) {
-        val execBuilder = ExecBuilder<T>()
+        val execBuilder: ExecBuilder<T> = ExecBuilder()
         block(execBuilder)
 
         when (execBuilder.hasPreparedStatement) {
@@ -90,7 +90,7 @@ class TransactionBuilder constructor(
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
     fun <T> insert(block: ExecBuilder<T>.() -> Unit) {
-        val execBuilder = ExecBuilder<T>()
+        val execBuilder: ExecBuilder<T> = ExecBuilder()
         block(execBuilder)
 
         exec(execBuilder.statement, execBuilder.values, execBuilder.type)
@@ -102,7 +102,7 @@ class TransactionBuilder constructor(
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
     fun <T> update(block: ExecBuilder<T>.() -> Unit) {
-        val execBuilder = ExecBuilder<T>()
+        val execBuilder: ExecBuilder<T> = ExecBuilder()
         block(execBuilder)
 
         exec(execBuilder.statement, execBuilder.values, execBuilder.type)
@@ -114,7 +114,7 @@ class TransactionBuilder constructor(
      * @param block Block that sets [ExecBuilder] and uses it for operations
      */
     fun <T> delete(block: ExecBuilder<T>.() -> Unit) {
-        val execBuilder = ExecBuilder<T>()
+        val execBuilder: ExecBuilder<T> = ExecBuilder()
         block(execBuilder)
 
         exec(execBuilder.statement, execBuilder.values, execBuilder.type)
@@ -125,7 +125,7 @@ class TransactionBuilder constructor(
      * @param block Block that sets [QueryBuilder] and uses it for operations
      */
     fun <T> query(block: QueryBuilder<T>.() -> Unit) {
-        val queryBuilder = QueryBuilder<T>()
+        val queryBuilder: QueryBuilder<T> = QueryBuilder()
         block(queryBuilder)
 
         queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
@@ -136,7 +136,7 @@ class TransactionBuilder constructor(
      * @param block Block that sets [QueryBuilder] and uses it for operations
      */
     fun <T> queryList(block: QueryBuilder<T>.() -> Unit) {
-        val queryBuilder = QueryBuilder<T>()
+        val queryBuilder: QueryBuilder<T> = QueryBuilder()
         block(queryBuilder)
 
         queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
@@ -179,7 +179,7 @@ class TransactionBuilder constructor(
         }
     }
 
-    private fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
+    private inline fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
         val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
 
@@ -200,7 +200,7 @@ class TransactionBuilder constructor(
 
     }
 
-    private fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
+    private inline fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
         val list: ArrayList<T> = arrayListOf()
         val ps: PreparedStatement = connection.prepareStatement(statement)
         lateinit var resultSet: ResultSet
@@ -223,7 +223,7 @@ class TransactionBuilder constructor(
         resultSet.close()
     }
 
-    internal fun finalize() {
+    fun finalize() {
         pss.forEach { println("\u001B[36m[medusa]\u001B[0m: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
         pss.map(PreparedStatement::close)
         println("\u001B[33m[medusa]\u001B[0m: Returning connection: ${this.connection}")

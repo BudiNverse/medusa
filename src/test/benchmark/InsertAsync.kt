@@ -57,6 +57,10 @@ class InsertAsync(override val name: String = "INSERT_ASYNC",
             println("\u001B[33m[medusa_benchmark::$name]\u001B[0m:=======================================================================================")
         }
     }
+
+    override fun runBenchmark() {
+        throw NotImplementedError()
+    }
 }
 
 
