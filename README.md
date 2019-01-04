@@ -28,7 +28,7 @@ Medusa is not an ORM, it is just a utilities library to help you.
 - [x] Extend config to have support for databases that cannot generate keys (0.0.2)
  
 ### Planned changes/updates
-- [ ] Database `Connection` pooling (0.0.3)
+- [x] Database `Connection` pooling (0.0.3)
 - [ ] Compile time generation of kotlin models based on database schema (0.0.3)
 - [ ] Compile time generation of frequently used SQL statements. Eg. `INSERT INTO USER (email, username, passwordhash) VALUES (?,?,?)`(0.0.3)
 
