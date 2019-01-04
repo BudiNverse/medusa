@@ -102,6 +102,7 @@ class TransactionTest {
         lateinit var execResult: ExecResult<Int>
         lateinit var resList: List<Any?>
         lateinit var updateRes: ExecResult<Int>
+        lateinit var brokenUpdate: ExecResult<Int>
 
         val transaction = transaction {
             insert<Int> {
@@ -127,6 +128,12 @@ class TransactionTest {
                 values = arrayOf("zeon000")
                 type = ::Person
             }
+
+            // this should break
+            update<Int> {
+                statement = DummyData.update
+                values = arrayOf("zeon420", "XD", 1)
+            }
         }
 
         when (transaction) {
@@ -136,6 +143,7 @@ class TransactionTest {
                 qr = transaction.res[2] as List<Person>
                 person = transaction.res[3] as? Person
                 resList = transaction.res
+                brokenUpdate = transaction.res[4] as ExecResult<Int>
 
             }
             is Err -> println(transaction.e)
@@ -149,6 +157,7 @@ class TransactionTest {
         println(qr)
         println(person)
         println(updateRes)
+        println(brokenUpdate)
     }
 
     @Test

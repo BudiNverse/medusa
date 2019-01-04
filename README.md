@@ -260,7 +260,6 @@ Insert (asynchronous): 0.3531 ms/record
 Query (asynchronous): 0.00009854 ms/record (1000 concurrent queries with 50k record/query)
 
 **Computer: Macbook Pro (13-inch 2017) Intel Core i5 2.3Ghz, 8GB @ 2133Mhz**
-
 **Medusa: Minimum 10, Maximum 15 connections in pool, Coroutines dispatched on `Dispatchers.IO` from standard library**
 
 Insert (asynchronous): 0.1757 ms/record

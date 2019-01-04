@@ -36,6 +36,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
             Ok(results)
         } catch (e: Exception) {
             e.printStackTrace()
+            connection.rollback()
             Err(e)
         } finally {
             finalize()
@@ -70,6 +71,10 @@ class TransactionBuilder constructor(
 
     val results: ArrayList<Any?> = arrayListOf()
     private val pss: ArrayList<PreparedStatement> = arrayListOf()
+
+    init {
+        connection.autoCommit = false
+    }
 
     /**
      * DSL version of [exec]
@@ -230,6 +235,7 @@ class TransactionBuilder constructor(
         pss.forEach { println("\u001B[36m[medusa]\u001B[0m: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
         pss.map(PreparedStatement::close)
         println("\u001B[33m[medusa]\u001B[0m: Returning connection: ${this.connection}")
+        connection.commit()
         connection.close()
     }
 }
