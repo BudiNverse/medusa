@@ -1,4 +1,4 @@
-# medusa - simpler jdbc
+# medusa - Simpler JDBC DSL
 ![Alt text](https://raw.githubusercontent.com/BudiNverse/medusa/master/preview.png)
 
  [ ![Download](https://api.bintray.com/packages/budinverse/utils/medusa/images/download.svg) ](https://bintray.com/budinverse/utils/medusa/_latestVersion)
@@ -166,8 +166,8 @@ For deletion just change the statement
 ```
 ---
 ## Performance
-> As of now, since medusa is still not 1.0 yet, performance is **NOT** a focus. The focus is to provide and ergonomic
-API.However if you looking for ballpark of how medusa performs, here they are
+> As of now, since medusa is still not 1.0 yet, performance is **NOT** a focus. The focus is to provide and ergonomic API.
+However if you looking for ballpark of how medusa performs, here they are
 
 **Computer: Intel Core i7 3770k @ 4.3Ghz, 16GB @ 2000Mhz RAM, Samsung 850 EVO 500GB, Windows 10 Education, MySQL 8.0**
 
