@@ -26,18 +26,21 @@ class QueryAsync(override val name: String = "QUERY_ASYNC",
                  override val iter: Int = 5) : Benchmark {
 
     // language=MySQL
-    private val stmt = "SELECT * FROM person LIMIT 10000"
+    private val stmt = "SELECT * FROM person LIMIT 1000"
     private val size = 1000
 
     override suspend fun runBenchmarkAsync() {
+        val final = arrayListOf<ArrayList<Person>?>()
         for (i in 1..iter) {
             val time = measureTimeMillis {
                 val jobs = List(size) {
                     transactionAsync {
-                        queryList<Person> {
+                        val list = queryList<Person> {
                             statement = stmt
                             type = ::Person
                         }
+
+                        final.add(list.transformed)
                     }
                 }
 
@@ -45,6 +48,8 @@ class QueryAsync(override val name: String = "QUERY_ASYNC",
                     job.join()
                 }
             }
+
+            final.forEach { println(it?.size) }
             println("\u001B[33m[medusa_benchmark]\u001B[0m: It took $time ms to complete $name. Iter: $i")
         }
     }

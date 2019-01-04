@@ -1,8 +1,6 @@
 import com.budinverse.medusa.config.dbConfig
 import com.budinverse.medusa.core.transaction
 import com.budinverse.medusa.models.ExecResult
-import com.budinverse.medusa.models.TransactionResult.Err
-import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.get
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -57,9 +55,9 @@ class TransactionTest {
 
     @Test
     fun insertTest() {
-        var ins: ExecResult<Int>? = null
-        val tx = transaction {
-            insert<Int> {
+        lateinit var ins: ExecResult<Int>
+        transaction {
+            ins = insert {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[0].name, DummyData.persons[0].age)
                 type = {
@@ -68,44 +66,28 @@ class TransactionTest {
             }
         }
 
-        when (tx) {
-            is Ok -> ins = tx.res[0] as ExecResult<Int>
-            is Err -> println(tx.e)
-        }
-
-        println(ins?.transformed)
-        assertEquals(1, ins?.rowsMutated)
+        println(ins.transformed)
+        assertEquals(1, ins.transformed)
     }
 
     @Test
     fun updateTest() {
-        var rowsMutated = 0
-        val tx = transaction {
-            update<Int> {
+        lateinit var execResult: ExecResult<Person>
+        transaction {
+            execResult = update {
                 statement = DummyData.update
                 values = arrayOf(DummyData.persons[1].name, DummyData.persons[1].age, 1)
+                type = ::Person
             }
         }
 
-        when (tx) {
-            is Ok -> rowsMutated = (tx.res[0] as ExecResult<Int>).rowsMutated
-            is Err -> println(tx.e)
-        }
-
-        assertEquals(1, rowsMutated)
+        assertEquals(1, execResult.rowsMutated)
     }
 
     @Test
     fun txn() {
-        lateinit var qr: List<Person>
-        var person: Person? = null
-        lateinit var execResult: ExecResult<Int>
-        lateinit var resList: List<Any?>
-        lateinit var updateRes: ExecResult<Int>
-        lateinit var brokenUpdate: ExecResult<Int>
-
-        val transaction = transaction {
-            insert<Int> {
+        transaction {
+            val insert = insert<Int> {
                 statement = DummyData.insert
                 values = arrayOf("jeff", 19)
                 type = {
@@ -115,7 +97,7 @@ class TransactionTest {
 
             update<Int> {
                 statement = DummyData.update
-                values = arrayOf("zeon420", 19, 1)
+                values = arrayOf("zeon420", 19, insert.transformed)
             }
 
             queryList<Person> {
@@ -132,58 +114,35 @@ class TransactionTest {
             // this should break
             update<Int> {
                 statement = DummyData.update
-                values = arrayOf("zeon420", "XD", 1)
+                values = arrayOf("zeon420", 20, insert.transformed)
             }
         }
-
-        when (transaction) {
-            is Ok -> {
-                execResult = transaction.res[0] as ExecResult<Int>
-                updateRes = transaction.res[1] as ExecResult<Int>
-                qr = transaction.res[2] as List<Person>
-                person = transaction.res[3] as? Person
-                resList = transaction.res
-                brokenUpdate = transaction.res[4] as ExecResult<Int>
-
-            }
-            is Err -> println(transaction.e)
-        }
-
-        //PK
-        assertEquals(1, execResult.transformed)
-
-        println(resList)
-        println(execResult.transformed)
-        println(qr)
-        println(person)
-        println(updateRes)
-        println(brokenUpdate)
     }
 
     @Test
     fun queryPerson() {
-        lateinit var person: Person
-        val transaction = transaction {
-            query<Person> {
+        lateinit var person: ExecResult<Person>
+        transaction {
+            person = query {
                 statement = DummyData.query
                 values = arrayOf("zeon111")
                 type = ::Person
             }
         }
 
-        when (transaction) {
-            is Ok -> person = transaction.res[0] as Person
-            is Err -> throw IllegalStateException(":(")
-        }
-
-        println(person) //Person(id=2, name=zeon111, age=20)
+        println(person.transformed)
     }
 
-    private fun insertUser(person: Person) = transaction {
-        exec<Int> {
-            //language=MySQL
-            statement = "UPDATE medusa_test.person SET name = ? WHERE id = ?"
-            values = arrayOf(person.name, 1)
+    @Test
+    fun queryListPerson() {
+        lateinit var personList: ExecResult<ArrayList<Person>>
+        transaction {
+            personList = queryList {
+                statement = DummyData.queryList
+                type = ::Person
+            }
         }
+
+        println(personList.transformed)
     }
 }

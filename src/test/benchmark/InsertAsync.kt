@@ -3,6 +3,7 @@ package benchmark
 import Person
 import com.budinverse.medusa.config.dbConfig
 import com.budinverse.medusa.core.transactionAsync
+import com.budinverse.medusa.utils.get
 import kotlin.system.measureTimeMillis
 
 suspend fun main(args: Array<String>) {
@@ -47,10 +48,16 @@ class InsertAsync(override val name: String = "INSERT_ASYNC",
                         insert<Int> {
                             statement = query
                             values = arrayOf(persons[i].name, persons[i].age)
-                        }
+                            type = {
+                                it[1]
+                            }
+                        }.run { println("PK: $this") }
                     }
                 }
-                jobs.forEach { it.join() }
+
+                jobs.forEach {
+                    it.join()
+                }
             }
 
             println("\u001B[33m[medusa_benchmark::$name]\u001B[0m:It took $time ms to benchmark. Iter: $i")
