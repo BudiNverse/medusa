@@ -23,18 +23,19 @@ Medusa is not an ORM, it is just a utilities library to help you.
 - [x] Standard database operations (query, queryList, insert, exec)
 - [x] `TransactionResult` type
 
-#### [0.0.2 Experimental - Possible breaking API changes]
+#### [0.0.2 Experimental - Breaking API changes]
 - [x] Reduce API differentiation for operation that returns a key and no key. (0.0.2)
 - [x] Extend config to have support for databases that cannot generate keys (0.0.2)
-- [x] Database `Connection` pooling using HikariCP
+- [x] Database `Connection` pooling using [HikariCP](https://github.com/brettwooldridge/HikariCP)
 - [x] Removed `TransactionResult` type
-- [ ] Updated to Kotlin 1.3 coroutines, dispatches on `Dispatcher.IO` by default for `transactionAsync` 
+- [x] Updated to Kotlin 1.3 coroutines, dispatches on `Dispatcher.IO` by default for `transactionAsync` 
  
 ### Planned changes/updates
 - [ ] Batch processing
 - [ ] Proper logger instead of `println`
-- [ ] Compile time generation of kotlin models based on database schema (0.0.3)
-- [ ] Compile time generation of frequently used SQL statements. Eg. `INSERT INTO USER (email, username, passwordhash) VALUES (?,?,?)`(0.0.3)
+- [ ] Compile time generation of kotlin models based on database schema
+- [ ] Customizable `Connection` pool, apart from HikariCP 
+- [ ] Compile time generation of frequently used SQL statements. Eg. `INSERT INTO USER (email, username, passwordhash) VALUES (?,?,?)`
 
 ### Misc TODOs
 - [ ] Logo (why not, I can also design no kappa)
