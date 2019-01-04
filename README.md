@@ -31,6 +31,7 @@ Medusa is not an ORM, it is just a utilities library to help you.
  
 ### Planned changes/updates
 - [ ] Batch processing
+- [ ] Proper logger instead of `println`
 - [ ] Compile time generation of kotlin models based on database schema (0.0.3)
 - [ ] Compile time generation of frequently used SQL statements. Eg. `INSERT INTO USER (email, username, passwordhash) VALUES (?,?,?)`(0.0.3)
 
@@ -97,156 +98,70 @@ data class User(val id: Int = 0,
 ### Query
 A single query
 ```kotlin
-fun getUser() = transaction {
-        query<User> {
-            //language=MySQL
-            statement = "SELECT * FROM User WHERE name = ?"
-            values = arrayOf("zeon222")
-            type = ::User
+    fun queryPerson(): Person {
+        lateinit var personRes: ExecResult.SingleResult<Person>
+        transaction {
+            personRes = query {
+                statement = "SELECT * FROM User WHERE name = ?"
+                values = arrayOf("zeon111")
+                type = ::Person
+            }
         }
-}
 
-fun main(args: Array<String>) {
-    val tx = getUser()
-    when(tx) {
-        is Ok -> println(tx.res[0] as User) // User(id=18, name=Zeon222, age=20)
-        is Err -> println(tx.e)
+        return personRes.transformed // User(id=18, name=Zeon111, age=20)
     }
-}
 
+    
 ```
+
 Querying list of objects
 ```kotlin
-fun getUsers() = transaction {
-        val users = queryList<User> {
-            //language=MySQL
-            statement = "SELECT * FROM User"
-            type = ::User // make sure constructor is available!
+    fun queryListPerson(): ArrayList<Person> {
+        lateinit var personList: ExecResult.ListResult<Person>
+        transaction {
+            personList = queryList {
+                statement = "SELECT * FROM person"
+                type = ::Person
+            }
         }
-}
 
-fun main(args: Array<String>) {
-    val tx = getUsers()
-    when(tx) {
-        is Ok -> println(tx.res[0] as List<User>) // [User(id=18, name=Zeon222, age=20), User(id=20, name=Zeon333, age=19)]
-        is Err -> println(tx.e)
+        return personList.transformedList // [User(id=18, name=Zeon111, age=20), User(id=19, name=Zeon222, age=20)]
     }
-}
-
 ```
 
 ### Insert
 ```kotlin
-fun insertUser(user: User): TransactionResult = transaction {
-        exec {
-            //language=MySQL
-            statement = "INSERT INTO User (name, age) VALUES (?,?)"
-            values = arrayOf(user.name, user.age)
+    fun insertTest(person: Person) {
+        lateinit var ins: ExecResult.SingleResult<Int>
+        transaction {
+            ins = insert {
+                statement = DummyData.insert
+                values = arrayOf(person.name, person.age)
+                type = {
+                    it[1]
+                }
+            }
         }
-    }
-    
-fun runInsert() {
-    val user = User("zeon000", 19)
-    val res = insertUser(user)
-    
-    when (res) {
-        is Ok -> /* Do smth on success */
-        is Err -> /* Do smth on Err */
-    }
-}    
+
+        println(ins.transformed) // Auto generated PK
+    }    
 ```
 
 ### Update/Delete
 For deletion just change the statement
 ```kotlin
-fun updateUser(user: user) = transaction {
-        exec {
-            //language=MySQL
-            statement = "UPDATE medusa_test.user SET name = ? WHERE id = ?"
-            values = arrayOf(user.name, 1)
+    fun updateTest(person: Person) {
+        lateinit var execResult: ExecResult.SingleResult<Person>
+        transaction {
+            execResult = update {
+                statement = "UPDATE person SET name = ?, age = ? WHERE id = ?"
+                values = arrayOf(person.name, person.age, 1)
+                type = ::Person
+            }
         }
-    }
-    
-fun runUpdate() {
-        val user = User(name = "zeon000", age = 19)
-        val res = updateUser(user)
 
-        when (res) {
-            is Ok -> /* Do smth on success */
-            is Err -> /* Do smth on Err */
-        }
     }
 ```
-
-### Transaction Async
-```kotlin
-suspend fun queryUserAsync() {
-    var user: User? = null
-    var user2: User? = null
-
-    val txn1 = transactionAsync {
-        query<User> {
-            statement = "SELECT * FROM medusa_test.Person WHERE name = ?"
-            values = arrayOf("zeon111")
-            type = ::Person
-        }
-    }
-
-    val txn2 = transactionAsync {
-        query<User> {
-            statement = "SELECT * FROM medusa_test.Person WHERE name = ?"
-            values = arrayOf("zeon111")
-            type = ::Person
-        }
-    }
-
-    // you have to await both transactions
-    // before using person and person2
-    // else there will be a data race
-    // and it will print null
-    // which is what was initialized with
-    
-    val awaitedTxn1 = txn1.await()
-    val awaitedTxn2 = txn2.await()
-
-    user = when (awaitedTxn1) {
-        is Ok -> awaitedTxn1.res[0] as User
-        is Err -> null
-    }
-
-    user2 = when (awaitedTxn2) {
-        is Ok -> awaitedTxn2.res[0] as User
-        is Err -> null
-    }
-
-    println("${System.currentTimeMillis()} : $user")
-    println("${System.currentTimeMillis()} : $user2")
-}
-
-fun main(args: Array<String>) = runBlocking {
-    launch {
-        queryUserAsync()
-    }
-    queryUserAsync()
-}
-```
-
-This will print
-```
-[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
-[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
-[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
-[medusa]: com.mysql.cj.jdbc.ClientPreparedStatement: SELECT * FROM medusa_test.User WHERE name = 'zeon111'. Warning(s): null. RowsUpdated: -1 
-[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@1242cd18 
-[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@21386018 
-[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@4f66d092 
-[medusa]: Closing connection: com.mysql.cj.jdbc.ConnectionImpl@6117a77f 
-1539087990865 : User(id=2, name=zeon111, age=20)
-1539087990865 : User(id=2, name=zeon111, age=20)
-1539087990865 : User(id=2, name=zeon111, age=20)
-1539087990865 : User(id=2, name=zeon111, age=20)
-```
-
 ---
 ## Performance
 > As of now, since medusa is still not 1.0 yet, performance is **NOT** a focus yet.However
