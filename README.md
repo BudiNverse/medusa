@@ -53,7 +53,7 @@ dependencies {
 Setting up your `DatabaseConfig` via properties file
 ```kotlin
 fun main(args: Array<String>) {
-    DatabaseConfig.setConfig(configFileDir = "databaseConfig.properties")
+    DatabaseConfig.setConfig(configFileDir = "medusaConfig.properties")
 }
 ```
 

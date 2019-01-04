@@ -1,6 +1,7 @@
 package com.budinverse.medusa.core
 
-import com.budinverse.medusa.config.DatabaseConfig.Companion.databaseConfig
+import com.budinverse.medusa.config.MedusaConfig
+import com.budinverse.medusa.config.MedusaConfig.Companion.medusaConfig
 import com.budinverse.medusa.models.ExecBuilder
 import com.budinverse.medusa.models.ExecResult
 import com.budinverse.medusa.models.QueryBuilder
@@ -8,7 +9,7 @@ import com.budinverse.medusa.models.TransactionResult
 import com.budinverse.medusa.models.TransactionResult.Err
 import com.budinverse.medusa.models.TransactionResult.Ok
 import com.budinverse.medusa.utils.*
-import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.*
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -28,13 +29,13 @@ import java.sql.Statement
  * @return [TransactionResult]
  */
 fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
-    TransactionBuilder(block = block).run {
+    TransactionBuilder().run {
         return try {
             block()
             Ok(this.results)
         } catch (e: Exception) {
             e.printStackTrace()
-            connection.rollback()
+            //connection.rollback()
             Err(e)
         } finally {
             finalize()
@@ -45,6 +46,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
 /**
  * Asynchronous version of transaction
  * @see transaction
+ * @param dispatcher Coroutine Dispatcher, default is Dispatchers.IO
  * @param block Takes in functions that are available in TransactionBuilder ie.
  * - exec
  * - insert
@@ -54,82 +56,78 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
  * - queryList
  * @return Deferred [TransactionResult]
  */
-fun transactionAsync(block: TransactionBuilder.() -> Unit) = async {
-    transaction {
-        block()
-    }
-}
+fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO,
+                     block: TransactionBuilder.() -> Unit): Deferred<TransactionResult> =
+        CoroutineScope(dispatcher).async {
+            transaction {
+                block()
+            }
+        }
 
 class TransactionBuilder constructor(
-        val connection: Connection = getDatabaseConnection(),
-        val block: TransactionBuilder.() -> Unit) {
+        private val connection: Connection = MedusaConfig.medusaConfig.connectionPool.connection) {
 
-    internal val results: MutableList<Any?> = arrayListOf()
+    internal val results: ArrayList<Any?> = arrayListOf()
 
-    private val pss: MutableList<PreparedStatement> = mutableListOf()
+    private val pss: ArrayList<PreparedStatement> = arrayListOf()
 
     init {
-        connection.autoCommit = false
+        //connection.autoCommit = false
     }
 
     /**
      * DSL version of [exec]
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun exec(block: ExecBuilder.() -> Unit): ExecResult {
-        val execBuilder = ExecBuilder()
+    fun <T> exec(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
-        return when (execBuilder.hasPreparedStatement) {
-            true -> exec(execBuilder.statement, execBuilder.values)
-            else -> exec(execBuilder.statement)
+        when (execBuilder.hasPreparedStatement) {
+            true -> exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+            else -> exec<T>(execBuilder.statement)
         }
     }
 
     /**
-     * DSL version of [exec]
+     * DSL version of [insert]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun insert(block: ExecBuilder.() -> Unit): ExecResult {
-        val execBuilder = ExecBuilder()
+    fun <T> insert(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
-        return insert(execBuilder.statement, execBuilder.values)
+        exec(execBuilder.statement, execBuilder.values, execBuilder.type)
     }
 
     /**
-     * DSL version of [exec]
+     * DSL version of [update]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun update(block: ExecBuilder.() -> Unit): ExecResult {
-        val execBuilder = ExecBuilder()
+    fun <T> update(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
-        return insert(execBuilder.statement, execBuilder.values)
+        exec(execBuilder.statement, execBuilder.values, execBuilder.type)
     }
 
     /**
-     * DSL version of [exec]
+     * DSL version of [delete]
      * Same implementation as [exec]. Created to improve readability
      * @param block Block that sets [ExecBuilder] and uses it for operations
-     * @return [ExecResult]
      */
-    fun delete(block: ExecBuilder.() -> Unit): ExecResult {
-        val execBuilder = ExecBuilder()
+    fun <T> delete(block: ExecBuilder<T>.() -> Unit) {
+        val execBuilder = ExecBuilder<T>()
         block(execBuilder)
 
-        return insert(execBuilder.statement, execBuilder.values)
+        exec(execBuilder.statement, execBuilder.values, execBuilder.type)
     }
 
     /**
      * DSL version of [query]
      * @param block Block that sets [QueryBuilder] and uses it for operations
-     * @return [QueryResult]
      */
     fun <T> query(block: QueryBuilder<T>.() -> Unit) {
         val queryBuilder = QueryBuilder<T>()
@@ -141,30 +139,29 @@ class TransactionBuilder constructor(
     /**
      * DSL version of [queryList]
      * @param block Block that sets [QueryBuilder] and uses it for operations
-     * @return [QueryResult]
      */
     fun <T> queryList(block: QueryBuilder<T>.() -> Unit) {
         val queryBuilder = QueryBuilder<T>()
         block(queryBuilder)
 
         queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
-                ?: throw IllegalArgumentException("Type with `resultSet` constructor not provided!")
+                ?: throw IllegalArgumentException("Type with `type` constructor not provided!")
     }
 
     /**
      * Executes raw SQL String without using any preparedStatements
      * @param statement
      */
-    fun exec(statement: String): ExecResult {
+    private fun <T> exec(statement: String) {
         val rowsMutated = connection.prepareStatement(statement).executeUpdate()
-        return ExecResult(rowsMutated)
+        results.add(ExecResult<T>(rowsMutated))
     }
 
-    fun exec(statement: String, psValues: Array<Any?> = arrayOf()): ExecResult {
-        val ps: PreparedStatement = if (databaseConfig.generatedKeySupport)
-            connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
-        else
-            connection.prepareStatement(statement)
+    private fun <T> exec(statement: String, psValues: Array<Any?> = arrayOf(), transform: ((ResultSet) -> T)? = null) {
+        val ps: PreparedStatement = when (medusaConfig.generatedKeySupport) {
+            true -> connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
+            else -> connection.prepareStatement(statement)
+        }
 
         pss += ps
 
@@ -173,20 +170,21 @@ class TransactionBuilder constructor(
             "Number of values does not match number of parameters in preparedStatement!"
         }
 
-        // set resultSet to preparedStatement from psValues
+        // set type to preparedStatement from psValues
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
-        val rowsMutated = ps.executeUpdate()
-        val rs: ResultSet = ps.generatedKeys
+        val rowsMutated: Int = ps.executeUpdate()
+        val resultSet: ResultSet = ps.generatedKeys
 
-        return when {
-            databaseConfig.generatedKeySupport && rs.next() -> ExecResult(rowsMutated, rs)
-            else -> ExecResult(rowsMutated)
+        when {
+            medusaConfig.generatedKeySupport && resultSet.next() ->
+                results.add(ExecResult(rowsMutated, transform?.invoke(resultSet))).run { resultSet.close() }
+            else -> results.add(ExecResult<T>(rowsMutated)).run { resultSet.close() }
         }
     }
 
-    fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
+    private fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
         val ps: PreparedStatement = connection.prepareStatement(statement)
         pss += ps
 
@@ -197,17 +195,20 @@ class TransactionBuilder constructor(
         for (i in 1..psValues.size) {
             ps[i] = psValues[i - 1]
         }
+
         val resultSet: ResultSet = ps.executeQuery()
 
         when {
-            resultSet.next() -> results.add(transform(resultSet))
+            resultSet.next() -> results.add(transform(resultSet)).run { resultSet.close() }
+            else -> results.add(null).run { resultSet.close() }
         }
 
     }
 
-    fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
-        val list = mutableListOf<T>()
-        val ps = connection.prepareStatement(statement)
+    private fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
+        val list: ArrayList<T> = arrayListOf()
+        val ps: PreparedStatement = connection.prepareStatement(statement)
+        lateinit var resultSet: ResultSet
         pss += ps
 
         require(ps.parameterMetaData.parameterCount == psValues.size) {
@@ -218,22 +219,19 @@ class TransactionBuilder constructor(
             ps[i] = psValues[i - 1]
         }
 
-        val resultSet: ResultSet = ps.executeQuery()
+        resultSet = ps.executeQuery()
+
         while (resultSet.next())
             list.add(transform(resultSet))
 
         results.add(list)
+        resultSet.close()
     }
 
-    fun insert(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
-    fun update(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
-    fun delete(statement: String, psValues: Array<Any?> = arrayOf()) = exec(statement, psValues)
-
-    fun finalize() {
-        pss.forEach { println("\u001B[36m[medusa]: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount} \u001B[0m") }
-        connection.commit()
+    internal fun finalize() {
+        pss.forEach { println("\u001B[36m[medusa]\u001B[0m: $it. Warning(s): ${it.warnings}. RowsUpdated: ${it.updateCount}") }
         pss.map(PreparedStatement::close)
+        println("\u001B[33m[medusa]\u001B[0m: Returning connection: ${this.connection}")
         connection.close()
-        println("\u001B[33m[medusa]: Closing connection: ${this.connection} \u001B[0m")
     }
 }

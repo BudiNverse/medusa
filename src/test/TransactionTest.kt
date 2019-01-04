@@ -20,12 +20,14 @@ data class Person(val id: Int = 0,
 }
 
 object DummyData {
-
-
+    // language=MySQL
     const val insert = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
+    // language=MySQL
     const val query = "SELECT * FROM medusa_test.Person WHERE name = ?"
+    // language=MySQL
     const val queryList = "SELECT * FROM medusa_test.Person"
-    const val update = "UPDATE medusa_test.Person SET name = ?, age = ? WHERE name = ?"
+    // language=MySQL
+    const val update = "UPDATE medusa_test.Person SET name = ?, age = ? WHERE id = ?"
 
     val persons = arrayOf(
             Person(name = "zeon000", age = 19),
@@ -43,60 +45,78 @@ class TransactionTest {
             databasePassword = "12345"
             databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
             driver = "com.mysql.cj.jdbc.Driver"
+            connectionPool = connectionPool {
+                minimumIdle = 10
+                maximumPoolSize = 15
+                addDataSourceProperty("cachePrepStmts", "true")
+                addDataSourceProperty("prepStmtCacheSize", "250")
+                addDataSourceProperty("prepStmtCacheSqlLimit", "2048")
+            }
         }
     }
 
     @Test
     fun insertTest() {
-        var ins: ExecResult? = null
-        transaction {
-            ins = insert {
+        var ins: ExecResult<Int>? = null
+        val tx = transaction {
+            insert<Int> {
                 statement = DummyData.insert
                 values = arrayOf(DummyData.persons[0].name, DummyData.persons[0].age)
+                type = {
+                    it[1]
+                }
             }
         }
 
-        println(ins)
+        when (tx) {
+            is Ok -> ins = tx.res[0] as ExecResult<Int>
+            is Err -> println(tx.e)
+        }
+
+        println(ins?.transformed)
         assertEquals(1, ins?.rowsMutated)
     }
 
     @Test
     fun updateTest() {
-        transaction {
-            update {
+        var rowsMutated = 0
+        val tx = transaction {
+            update<Int> {
                 statement = DummyData.update
-                values = arrayOf(DummyData.persons[1].name, DummyData.persons[1].age, DummyData.persons[0].name)
-            }
-        }
-    }
-
-    @Test
-    fun transactionTest() {
-        var ins: ExecResult? = null
-        var upt: ExecResult? = null
-
-        transaction {
-            ins = insert {
-                statement = DummyData.insert
-                values = arrayOf(DummyData.persons[2].name, DummyData.persons[2].age)
-            }
-
-            upt = update {
-                statement = DummyData.update
-                values = arrayOf(DummyData.persons[3].name, DummyData.persons[3].age, DummyData.persons[2].name)
+                values = arrayOf(DummyData.persons[1].name, DummyData.persons[1].age, 1)
             }
         }
 
-        assertEquals(1, ins?.rowsMutated)
-        assertEquals(1, upt?.rowsMutated)
+        when (tx) {
+            is Ok -> rowsMutated = (tx.res[0] as ExecResult<Int>).rowsMutated
+            is Err -> println(tx.e)
+        }
+
+        assertEquals(1, rowsMutated)
     }
 
     @Test
-    fun queryListTest() {
+    fun txn() {
         lateinit var qr: List<Person>
-        lateinit var person: Person
+        var person: Person? = null
+        lateinit var execResult: ExecResult<Int>
+        lateinit var resList: List<Any?>
+        lateinit var updateRes: ExecResult<Int>
 
         val transaction = transaction {
+            insert<Int> {
+                statement = DummyData.insert
+                values = arrayOf("jeff", 19)
+                type = {
+                    it[1]
+                }
+            }
+
+            update<Int> {
+                statement = DummyData.update
+                values = arrayOf("zeon420", 19, 1)
+            }
+
             queryList<Person> {
                 statement = DummyData.queryList
                 type = ::Person
@@ -104,21 +124,31 @@ class TransactionTest {
 
             query<Person> {
                 statement = DummyData.query
-                values = arrayOf("zeon111")
+                values = arrayOf("zeon000")
                 type = ::Person
             }
         }
 
         when (transaction) {
             is Ok -> {
-                qr = transaction.res[0] as List<Person>
-                person = transaction.res[1] as Person
+                execResult = transaction.res[0] as ExecResult<Int>
+                updateRes = transaction.res[1] as ExecResult<Int>
+                qr = transaction.res[2] as List<Person>
+                person = transaction.res[3] as? Person
+                resList = transaction.res
+
             }
-            is Err -> throw IllegalStateException()
+            is Err -> println(transaction.e)
         }
 
+        //PK
+        assertEquals(1, execResult.transformed)
+
+        println(resList)
+        println(execResult.transformed)
         println(qr)
         println(person)
+        println(updateRes)
     }
 
     @Test
@@ -141,22 +171,10 @@ class TransactionTest {
     }
 
     private fun insertUser(person: Person) = transaction {
-        exec {
+        exec<Int> {
             //language=MySQL
             statement = "UPDATE medusa_test.person SET name = ? WHERE id = ?"
             values = arrayOf(person.name, 1)
         }
     }
-
-//    @Test
-//    fun runUpdate() {
-//        val user = Person(name = "zeon000", age = 19)
-//        val res = insertUser(user)
-//
-//        when (res) {
-//            is Ok -> /* Do smth on success */
-//            is Err -> /* Do smth on Err */
-//        }
-//    }
-
 }
