@@ -10,12 +10,12 @@ This helps reduce bugs where connection is not closed and bugs where column numb
 are wrong.All this in a lightweight library that leverages Kotlin's ability to write DSLs.
 Medusa is not an ORM, it is just a utilities library to help you.
 
-### Features
+## Features 🚀
 - Minimal use of reflection magic
 - DSL which results in easier usage
 - Asynchronous Transactions support (using Kotlin's coroutines)
 
-### Changelog
+## Changelog ⌚
 #### [0.0.1 Experimental] 
 - [x] Transaction Support
 - [x] Async Transaction
@@ -30,21 +30,21 @@ Medusa is not an ORM, it is just a utilities library to help you.
 - [x] Removed `TransactionResult` type
 - [x] Updated to Kotlin 1.3 coroutines, dispatches on `Dispatcher.IO` by default for `transactionAsync` 
  
-### Planned changes/updates
+#### Planned changes/updates
 - [ ] Batch processing
 - [ ] Proper logger instead of `println`
 - [ ] Compile time generation of kotlin models based on database schema
 - [ ] Customizable `Connection` pool, apart from HikariCP 
 - [ ] Compile time generation of frequently used SQL statements. Eg. `INSERT INTO USER (email, username, passwordhash) VALUES (?,?,?)`
 
-### Misc TODOs
+#### Misc TODOs
 - [ ] Logo (why not, I can also design no kappa)
 - [ ] Website (again, why not lmao)
 - [ ] An actual fullstack example using Jetbrain's Ktor
 - [ ] Some simple benchmark
 
 --- 
-## Usage
+## Config ⚙️
 ### Gradle
 ```groovy
 repositories {
@@ -53,13 +53,6 @@ repositories {
 dependencies {
   compile group: 'mysql', name: 'mysql-connector-java', version: '6.0.6' //depends on the driver you need
   compile 'com.budinverse.utils:medusa:<latest version>'
-}
-```
-### Config
-Setting up your `DatabaseConfig` via properties file
-```kotlin
-fun main(args: Array<String>) {
-    DatabaseConfig.setConfig(configFileDir = "medusaConfig.properties")
 }
 ```
 
@@ -83,7 +76,7 @@ fun main(args: Array<String>) {
 ```
 
 ---
-## Examples
+## Examples 📖
 Assume that all examples has the following `User` class
 ```kotlin
 data class User(val id: Int = 0,
@@ -165,7 +158,7 @@ For deletion just change the statement
     }
 ```
 ---
-## Performance
+## Performance 📊
 > As of now, since medusa is still not 1.0 yet, performance is **NOT** a focus. The focus is to provide and ergonomic API.
 However if you looking for ballpark of how medusa performs, here they are
 
@@ -178,6 +171,7 @@ Insert (asynchronous): Still benchmarking
 Query (asynchronous): Still benchmarking
 
 **Computer: Macbook Pro (13-inch 2017) Intel Core i5 2.3Ghz, 8GB @ 2133Mhz**
+
 **Medusa: Minimum 10, Maximum 15 connections in pool, Coroutines dispatched on `Dispatchers.IO` from standard library**
 
 Insert (asynchronous): Still benchmarking
