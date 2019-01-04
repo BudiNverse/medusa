@@ -9,7 +9,7 @@ suspend fun main(args: Array<String>) {
     dbConfig {
         databaseUser = "root"
         databasePassword = "12345"
-        databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
+        databaseUrl = "jdbc:mysql://localhost/medusa?useLegacyDatetimeCode=false&serverTimezone=UTC"
         driver = "com.mysql.cj.jdbc.Driver"
         connectionPool = connectionPool {
             minimumIdle = 10
@@ -27,8 +27,8 @@ suspend fun main(args: Array<String>) {
 class InsertAsync(override val name: String = "INSERT_ASYNC",
                   override val iter: Int = 5) : Benchmark {
     // language=MySQL
-    private val query = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
-    private val persons = generatePersons()
+    private val query = "INSERT INTO person(name, age) VALUES (?,?)"
+    private val persons: List<Person> = generatePersons()
 
     private fun generatePersons(): List<Person> {
         val personList: ArrayList<Person> = arrayListOf()
@@ -53,8 +53,7 @@ class InsertAsync(override val name: String = "INSERT_ASYNC",
                 jobs.forEach { it.join() }
             }
 
-            println("\u001B[33m[medusa_benchmark::$name]\u001B[0m:It took $time to benchmark. Iter: $i")
-            println("\u001B[33m[medusa_benchmark::$name]\u001B[0m:=======================================================================================")
+            println("\u001B[33m[medusa_benchmark::$name]\u001B[0m:It took $time ms to benchmark. Iter: $i")
         }
     }
 

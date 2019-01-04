@@ -4,7 +4,7 @@
  [ ![Download](https://api.bintray.com/packages/budinverse/utils/medusa/images/download.svg) ](https://bintray.com/budinverse/utils/medusa/_latestVersion)
  [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
  
-medusa is a jdbc-utilities library that is designed to reduce writing code pertaining to jdbc.
+> medusa is a jdbc-utilities library that is designed to reduce writing code pertaining to jdbc.
 No more closing of connection manually, no spawning your own `preparedStatements`. 
 This helps reduce bugs where connection is not closed and bugs where column number 
 are wrong.All this in a lightweight library that leverages Kotlin's ability to write DSLs.
@@ -37,8 +37,9 @@ Medusa is not an ORM, it is just a utilities library to help you.
 - [ ] Logo (why not, I can also design no kappa)
 - [ ] Website (again, why not lmao)
 - [ ] An actual fullstack example using Jetbrain's Ktor
+- [ ] Some simple benchmark
 
-
+--- 
 ## Usage
 ### Gradle
 ```groovy
@@ -76,6 +77,8 @@ fun main(args: Array<String>) {
     }
 }
 ```
+
+---
 ## Examples
 Assume that all examples has the following `User` class
 ```kotlin
@@ -243,5 +246,14 @@ This will print
 1539087990865 : User(id=2, name=zeon111, age=20)
 ```
 
+---
+## Performance
+> As of now, since medusa is still not 1.0 yet, performance is **NOT** a focus yet.However
+if you looking for ballpark of how medusa performs, here they are
+
+###### Computer: Intel Core i7 3770k @ 4.3Ghz, 16GB @ 2000Mhz RAM, Samsung 850 EVO 500GB, Windows 10 Education, MySQL 8.0
+###### Medusa: Minimum 10, Maximum 15 connections in pool, Coroutines dispatched on `Dispatchers.IO` from standard library
+Insert (asynchronous): 0.3531 ms/record 
+Query (asynchronous): 0.0005159 ms/record (1000 concurrent queries with 10k record/query) 
 
 

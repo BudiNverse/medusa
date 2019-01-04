@@ -21,13 +21,13 @@ data class Person(val id: Int = 0,
 
 object DummyData {
     // language=MySQL
-    const val insert = "INSERT INTO medusa_test.Person(name, age) VALUES (?,?)"
+    const val insert = "INSERT INTO person(name, age) VALUES (?,?)"
     // language=MySQL
-    const val query = "SELECT * FROM medusa_test.Person WHERE name = ?"
+    const val query = "SELECT * FROM person WHERE name = ?"
     // language=MySQL
-    const val queryList = "SELECT * FROM medusa_test.Person"
+    const val queryList = "SELECT * FROM person"
     // language=MySQL
-    const val update = "UPDATE medusa_test.Person SET name = ?, age = ? WHERE id = ?"
+    const val update = "UPDATE person SET name = ?, age = ? WHERE id = ?"
 
     val persons = arrayOf(
             Person(name = "zeon000", age = 19),
@@ -43,7 +43,7 @@ class TransactionTest {
         dbConfig {
             databaseUser = "root"
             databasePassword = "12345"
-            databaseUrl = "jdbc:mysql://localhost/medusa_test?useLegacyDatetimeCode=false&serverTimezone=UTC"
+            databaseUrl = "jdbc:mysql://localhost/medusa?useLegacyDatetimeCode=false&serverTimezone=UTC"
             driver = "com.mysql.cj.jdbc.Driver"
             connectionPool = connectionPool {
                 minimumIdle = 10
