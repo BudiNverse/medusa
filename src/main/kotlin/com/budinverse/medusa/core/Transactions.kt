@@ -35,6 +35,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
             block()
             Ok(results)
         } catch (e: Exception) {
+            e.printStackTrace()
             Err(e)
         } finally {
             finalize()
@@ -174,9 +175,11 @@ class TransactionBuilder constructor(
 
         when {
             medusaConfig.generatedKeySupport && resultSet.next() ->
-                results.add(ExecResult(rowsMutated, transform?.invoke(resultSet))).run { resultSet.close() }
-            else -> results.add(ExecResult<T>(rowsMutated)).run { resultSet.close() }
+                results.add(ExecResult(rowsMutated, transform?.invoke(resultSet)))
+            else -> results.add(ExecResult<T>(rowsMutated))
         }
+
+        resultSet.close()
     }
 
     private inline fun <T> query(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {
@@ -194,10 +197,10 @@ class TransactionBuilder constructor(
         val resultSet: ResultSet = ps.executeQuery()
 
         when {
-            resultSet.next() -> results.add(transform(resultSet)).run { resultSet.close() }
-            else -> results.add(null).run { resultSet.close() }
+            resultSet.next() -> results.add(transform(resultSet))
+            else -> results.add(null)
         }
-
+        resultSet.close()
     }
 
     private inline fun <T> queryList(statement: String, psValues: Array<Any?> = arrayOf(), transform: (ResultSet) -> T) {

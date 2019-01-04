@@ -39,7 +39,7 @@ class MedusaConfig(var databaseUser: String = "",
             jdbcUrl = this@MedusaConfig.databaseUrl
             username = this@MedusaConfig.databaseUser
             password = this@MedusaConfig.databasePassword
-            isAutoCommit = false
+            //isAutoCommit = false
         }
 
         block(hikariConfig)
