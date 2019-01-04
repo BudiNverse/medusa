@@ -32,10 +32,8 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
     TransactionBuilder().run {
         return try {
             block()
-            Ok(this.results)
+            Ok(results)
         } catch (e: Exception) {
-            e.printStackTrace()
-            //connection.rollback()
             Err(e)
         } finally {
             finalize()
@@ -58,6 +56,7 @@ fun transaction(block: TransactionBuilder.() -> Unit): TransactionResult {
  */
 fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO,
                      block: TransactionBuilder.() -> Unit): Deferred<TransactionResult> =
+
         CoroutineScope(dispatcher).async {
             transaction {
                 block()
@@ -65,15 +64,11 @@ fun transactionAsync(dispatcher: CoroutineDispatcher = Dispatchers.IO,
         }
 
 class TransactionBuilder constructor(
-        private val connection: Connection = MedusaConfig.medusaConfig.connectionPool.connection) {
+        val connection: Connection = MedusaConfig.medusaConfig.connectionPool.connection) {
 
     internal val results: ArrayList<Any?> = arrayListOf()
 
     private val pss: ArrayList<PreparedStatement> = arrayListOf()
-
-    init {
-        //connection.autoCommit = false
-    }
 
     /**
      * DSL version of [exec]
@@ -149,7 +144,7 @@ class TransactionBuilder constructor(
     }
 
     /**
-     * Executes raw SQL String without using any preparedStatements
+     * Executes raw SQL String without using any [PreparedStatement]
      * @param statement
      */
     private fun <T> exec(statement: String) {

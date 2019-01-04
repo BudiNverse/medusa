@@ -29,11 +29,17 @@ class MedusaConfig(var databaseUser: String = "",
 
     lateinit var connectionPool: HikariDataSource
 
+    /**
+     * Creates a HikariDataSource object
+     * @param block
+     * @return [HikariDataSource]
+     */
     fun connectionPool(block: HikariConfig.() -> Unit): HikariDataSource {
         val hikariConfig = HikariConfig().apply {
             jdbcUrl = this@MedusaConfig.databaseUrl
             username = this@MedusaConfig.databaseUser
             password = this@MedusaConfig.databasePassword
+            isAutoCommit = false
         }
 
         block(hikariConfig)
