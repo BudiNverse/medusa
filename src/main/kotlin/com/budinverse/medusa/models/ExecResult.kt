@@ -1,8 +1,8 @@
 package com.budinverse.medusa.models
 
-/**
- * @property rowsMutated No of rows that was mutated
- * @property transformed data that was transformed
- */
-data class ExecResult<T>(val rowsMutated: Int, val transformed: T? = null)
+
+sealed class ExecResult<T> {
+    class SingleResult<T>(val rowsMutated: Int, val transformed: T? = null) : ExecResult<T>()
+    class ListResult<T>(val transformedList: ArrayList<T> = arrayListOf()) : ExecResult<T>()
+}
 

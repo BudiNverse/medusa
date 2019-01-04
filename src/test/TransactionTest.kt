@@ -55,7 +55,7 @@ class TransactionTest {
 
     @Test
     fun insertTest() {
-        lateinit var ins: ExecResult<Int>
+        lateinit var ins: ExecResult.SingleResult<Int>
         transaction {
             ins = insert {
                 statement = DummyData.insert
@@ -72,7 +72,7 @@ class TransactionTest {
 
     @Test
     fun updateTest() {
-        lateinit var execResult: ExecResult<Person>
+        lateinit var execResult: ExecResult.SingleResult<Person>
         transaction {
             execResult = update {
                 statement = DummyData.update
@@ -121,7 +121,7 @@ class TransactionTest {
 
     @Test
     fun queryPerson() {
-        lateinit var person: ExecResult<Person>
+        lateinit var person: ExecResult.SingleResult<Person>
         transaction {
             person = query {
                 statement = DummyData.query
@@ -135,7 +135,7 @@ class TransactionTest {
 
     @Test
     fun queryListPerson() {
-        lateinit var personList: ExecResult<ArrayList<Person>>
+        lateinit var personList: ExecResult.ListResult<Person>
         transaction {
             personList = queryList {
                 statement = DummyData.queryList
@@ -143,6 +143,6 @@ class TransactionTest {
             }
         }
 
-        println(personList.transformed)
+        println(personList.transformedList)
     }
 }

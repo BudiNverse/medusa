@@ -40,7 +40,7 @@ class QueryAsync(override val name: String = "QUERY_ASYNC",
                             type = ::Person
                         }
 
-                        final.add(list.transformed)
+                        final.add(list.transformedList)
                     }
                 }
 
