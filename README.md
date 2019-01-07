@@ -51,7 +51,7 @@ repositories {
     jcenter()
 }
 dependencies {
-  compile group: 'mysql', name: 'mysql-connector-java', version: '6.0.6' //depends on the driver you need
+  compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.11' //depending on the driver you need
   compile 'com.budinverse.utils:medusa:<latest version>'
 }
 ```
