@@ -2,6 +2,7 @@ package com.budinverse.medusa.core
 
 import com.budinverse.medusa.config.MedusaConfig
 import com.budinverse.medusa.config.MedusaConfig.Companion.medusaConfig
+import com.budinverse.medusa.models.BatchBuilder
 import com.budinverse.medusa.models.ExecBuilder
 import com.budinverse.medusa.models.ExecResult
 import com.budinverse.medusa.models.QueryBuilder
@@ -92,7 +93,22 @@ class TransactionBuilder constructor(
         val execBuilder: ExecBuilder<T> = ExecBuilder()
         block(execBuilder)
 
-        return exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+        return when (execBuilder.hasPreparedStatement) {
+            true -> exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+            else -> exec(execBuilder.statement)
+        }
+    }
+
+    /**
+     * DSL version of [batch]
+     * Same implementation as [exec]. Created to improve readability
+     * @param block Block that sets [ExecBuilder] and uses it for operations
+     */
+    fun <T> batch(block: BatchBuilder<T>.() -> Unit): ExecResult.BatchResult<T> {
+        val batchBuilder: BatchBuilder<T> = BatchBuilder()
+        block(batchBuilder)
+
+        return batch(batchBuilder.statement, batchBuilder.values, batchBuilder.type)
     }
 
     /**
@@ -104,7 +120,10 @@ class TransactionBuilder constructor(
         val execBuilder: ExecBuilder<T> = ExecBuilder()
         block(execBuilder)
 
-        return exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+        return when (execBuilder.hasPreparedStatement) {
+            true -> exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+            else -> exec(execBuilder.statement)
+        }
     }
 
     /**
@@ -116,7 +135,10 @@ class TransactionBuilder constructor(
         val execBuilder: ExecBuilder<T> = ExecBuilder()
         block(execBuilder)
 
-        return exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+        return when (execBuilder.hasPreparedStatement) {
+            true -> exec(execBuilder.statement, execBuilder.values, execBuilder.type)
+            else -> exec(execBuilder.statement)
+        }
     }
 
     /**
@@ -141,6 +163,34 @@ class TransactionBuilder constructor(
 
         return queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
                 ?: throw IllegalArgumentException("Type constructor not provided!")
+    }
+
+    private fun <T> batch(statement: String,
+                  psValues: Array<Array<Any?>>,
+                  transform: ((ResultSet) -> T)? = null): ExecResult.BatchResult<T>  {
+
+        val ps: PreparedStatement = when (medusaConfig.generatedKeySupport) {
+            true -> connection.prepareStatement(statement, Statement.RETURN_GENERATED_KEYS)
+            else -> connection.prepareStatement(statement)
+        }
+
+        pss += ps
+
+        psValues.forEach {
+            for (i in 1..it.size) {
+                ps[i] = it[i - 1]
+            }
+            ps.addBatch()
+        }
+
+        val rowsMutated: IntArray = ps.executeBatch()
+        val resultSet: ResultSet = ps.generatedKeys
+
+        return when {
+            medusaConfig.generatedKeySupport && resultSet.next() ->
+                ExecResult.BatchResult(rowsMutated, transform?.invoke(resultSet))
+            else -> ExecResult.BatchResult(rowsMutated)
+        }
     }
 
     /**
