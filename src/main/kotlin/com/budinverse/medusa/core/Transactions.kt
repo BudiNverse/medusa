@@ -28,6 +28,7 @@ fun transaction(block: TransactionBuilder.() -> Unit) {
     TransactionBuilder().run {
         return try {
             block()
+            connection.commit()
         } catch (e: Exception) {
             e.printStackTrace()
             connection.rollback()
@@ -285,7 +286,6 @@ class TransactionBuilder constructor(
         resultSetList.map(ResultSet::close)
         pss.map(PreparedStatement::close)
         println("\u001B[33m[medusa]\u001B[0m: Returning connection: ${this.connection}")
-        connection.commit()
         connection.close()
     }
 }
