@@ -5,7 +5,6 @@ import com.budinverse.medusa.config.MedusaConfig.Companion.medusaConfig
 import com.budinverse.medusa.models.BatchBuilder
 import com.budinverse.medusa.models.ExecBuilder
 import com.budinverse.medusa.models.ExecResult
-import com.budinverse.medusa.models.QueryBuilder
 import com.budinverse.medusa.utils.*
 import kotlinx.coroutines.*
 import java.sql.Connection
@@ -102,7 +101,7 @@ class TransactionBuilder constructor(
     /**
      * DSL version of [batch]
      * Same implementation as [exec]. Created to improve readability
-     * @param block Block that sets [ExecBuilder] and uses it for operations
+     * @param block Block that sets [BatchBuilder] and uses it for operations
      */
     fun <T> batch(block: BatchBuilder<T>.() -> Unit): ExecResult.BatchResult<T> {
         val batchBuilder: BatchBuilder<T> = BatchBuilder()
@@ -143,25 +142,25 @@ class TransactionBuilder constructor(
 
     /**
      * DSL version of [query]
-     * @param block Block that sets [QueryBuilder] and uses it for operations
+     * @param block Block that sets [ExecBuilder] and uses it for operations
      */
-    fun <T> query(block: QueryBuilder<T>.() -> Unit): ExecResult.SingleResult<T> {
-        val queryBuilder: QueryBuilder<T> = QueryBuilder()
-        block(queryBuilder)
+    fun <T> query(block: ExecBuilder<T>.() -> Unit): ExecResult.SingleResult<T> {
+        val execBuilder: ExecBuilder<T> = ExecBuilder()
+        block(execBuilder)
 
-        return queryBuilder.type?.let { query(queryBuilder.statement, queryBuilder.values, it) }
+        return execBuilder.type?.let { query(execBuilder.statement, execBuilder.values, it) }
                 ?: throw IllegalArgumentException("Type constructor not provided!")
     }
 
     /**
      * DSL version of [queryList]
-     * @param block Block that sets [QueryBuilder] and uses it for operations
+     * @param block Block that sets [ExecBuilder] and uses it for operations
      */
-    fun <T> queryList(block: QueryBuilder<T>.() -> Unit): ExecResult.ListResult<T> {
-        val queryBuilder: QueryBuilder<T> = QueryBuilder()
-        block(queryBuilder)
+    fun <T> queryList(block: ExecBuilder<T>.() -> Unit): ExecResult.ListResult<T> {
+        val execBuilder: ExecBuilder<T> = ExecBuilder()
+        block(execBuilder)
 
-        return queryBuilder.type?.let { queryList(queryBuilder.statement, queryBuilder.values, it) }
+        return execBuilder.type?.let { queryList(execBuilder.statement, execBuilder.values, it) }
                 ?: throw IllegalArgumentException("Type constructor not provided!")
     }
 
